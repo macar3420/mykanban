@@ -4,7 +4,7 @@ import emojis from "./emojis.js";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
+router.get("/", (_req, res) => {
   res.json({
     message: "API - 👋🌎🌍🌏",
   });

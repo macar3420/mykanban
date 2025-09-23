@@ -28,26 +28,20 @@ Development utilities:
 - [supertest](https://www.npmjs.com/package/supertest)
   - HTTP assertions made easy via superagent.
 
+
 ## Setup
-
 ```
-pnpm install
+npm install
 ```
-
 ## Lint
-
 ```
-pnpm run lint
+npm run lint
 ```
-
 ## Test
-
 ```
-pnpm test
+npm test
 ```
-
 ## Development
-
 ```
-pnpm run dev
+npm run dev
 ```
