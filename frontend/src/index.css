@@ -1,11 +1,20 @@
+@font-face {
+  font-family: 'Pencilpete';
+  src: url('/fonts/PencilpeteFont-2eE3.ttf') format('truetype'),
+       url('/fonts/Pencilpetefont-844B.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Pencilpete', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #938e8e;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,7 +28,7 @@ a {
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #0a200a;
 }
 
 body {
@@ -45,7 +54,7 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #f8f8fe;
 }
 button:focus,
 button:focus-visible {
@@ -58,10 +67,10 @@ button:focus-visible {
     background-color: #ffffff;
   }
   a:hover {
-    color: #747bff;
+    color: #060604;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #651b1b;
   }
 }
 
@@ -75,9 +84,9 @@ button:focus-visible {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 1.25rem;
-  width: min(1100px, 100%);
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
+  gap: 1.5rem;
+  width: min(1400px, 100%);
 }
 
 .column {
@@ -92,6 +101,7 @@ button:focus-visible {
 
 .column h3 {
   margin: 0 0 0.75rem 0;
+  font-size: 2rem;
 }
 
 .items {
@@ -101,8 +111,123 @@ button:focus-visible {
 }
 
 .items li {
-  background: rgba(255, 255, 255, 0.9);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.items li::before {
+  content: "★";
+  color: rgb(255, 213, 74);
+  display: inline-block;
+  width: 1rem;
+  margin-right: 0.5rem;
+}
+
+.items li .item-actions {
+  opacity: 1;
+  position: static;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: #ebe9e9;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+.items li .item-text {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.items li.editing::before {
+  content: "";
+}
+
+.items li .item-input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+}
+
+.items li .item-menu-wrap { position: relative; margin-left: auto; flex: 0 0 auto; }
+
+.items li .item-menu-btn {
+  border: 1px solid rgba(248, 248, 248, 0.3);
+  background: transparent;
+  color: #ebe9e9;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+}
+
+.items li .item-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  margin-top: 0.25rem;
+  background: #000; /* opaque */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  z-index: 10;
+  min-width: 180px;
+}
+
+.items li .item-menu > button {
+  text-align: left;
+  background: transparent;
+  color: #eee;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+.items li .item-menu > button:hover {
+  background: rgba(160, 155, 155, 0.08);
+}
+
+.items li .item-menu .menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0.125rem 0;
+}
+
+.items li.done .item-text {
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+/* Make add-item input expand */
+.column input {
+  flex: 1;
+  min-width: 0;
+}
+
+.items li + li {
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
 }
