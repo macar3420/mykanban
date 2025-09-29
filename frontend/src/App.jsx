@@ -4,7 +4,16 @@ import "./App.css";
 function Column({ title, columnKey, refs, state }) {
   const { columns, editing, menuOpen } = state;
   const { todoRef, inprogressRef, doneRef, editInputRef } = refs;
-  const { handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete } = state.handlers;
+  const {
+    handleAdd,
+    startEdit,
+    toggleMenu,
+    commitEdit,
+    cancelEdit,
+    handleToggleDone,
+    handleMoveTo,
+    handleDelete,
+  } = state.handlers;
   return (
     <div className="column">
       <h3>{title}</h3>
@@ -33,10 +42,15 @@ function Column({ title, columnKey, refs, state }) {
       <ul className="items">
         {columns[columnKey].map((item) => {
           const isEditing =
-            editing && editing.columnKey === columnKey && editing.id === item.id;
+            editing &&
+            editing.columnKey === columnKey &&
+            editing.id === item.id;
           const isMenuOpen =
-            menuOpen && menuOpen.columnKey === columnKey && menuOpen.id === item.id;
-          const liClass = `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
+            menuOpen &&
+            menuOpen.columnKey === columnKey &&
+            menuOpen.id === item.id;
+          const liClass =
+            `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
           return (
             <li
               key={item.id}
@@ -100,7 +114,9 @@ function Column({ title, columnKey, refs, state }) {
                         <button
                           type="button"
                           role="menuitem"
-                          onClick={() => handleMoveTo(columnKey, item.id, "todo")}
+                          onClick={() =>
+                            handleMoveTo(columnKey, item.id, "todo")
+                          }
                         >
                           Move to To Do
                         </button>
@@ -109,7 +125,9 @@ function Column({ title, columnKey, refs, state }) {
                         <button
                           type="button"
                           role="menuitem"
-                          onClick={() => handleMoveTo(columnKey, item.id, "inprogress")}
+                          onClick={() =>
+                            handleMoveTo(columnKey, item.id, "inprogress")
+                          }
                         >
                           Move to In Progress
                         </button>
@@ -118,7 +136,9 @@ function Column({ title, columnKey, refs, state }) {
                         <button
                           type="button"
                           role="menuitem"
-                          onClick={() => handleMoveTo(columnKey, item.id, "done")}
+                          onClick={() =>
+                            handleMoveTo(columnKey, item.id, "done")
+                          }
                         >
                           Move to Done
                         </button>
