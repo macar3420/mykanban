@@ -217,7 +217,9 @@ function App() {
     setColumns((prev) => ({
       ...prev,
       [columnKey]: prev[columnKey].map((item) =>
-        item.id === id && text ? { ...item, title: text, updatedAt: new Date().toISOString() } : item
+        item.id === id && text
+          ? { ...item, title: text, updatedAt: new Date().toISOString() }
+          : item,
       ),
     }));
     setEditing(null);
@@ -229,7 +231,9 @@ function App() {
 
   function toggleMenu(columnKey, id) {
     setMenuOpen((prev) =>
-      prev && prev.columnKey === columnKey && prev.id === id ? null : { columnKey, id }
+      prev && prev.columnKey === columnKey && prev.id === id
+        ? null
+        : { columnKey, id },
     );
   }
 
@@ -237,7 +241,9 @@ function App() {
     setColumns((prev) => ({
       ...prev,
       [columnKey]: prev[columnKey].map((item) =>
-        item.id === id ? { ...item, done: !item.done, updatedAt: new Date().toISOString() } : item
+        item.id === id
+          ? { ...item, done: !item.done, updatedAt: new Date().toISOString() }
+          : item,
       ),
     }));
     setMenuOpen(null);
@@ -252,7 +258,11 @@ function App() {
       const item = prev[columnKeyFrom].find((i) => i.id === id);
       if (!item) return prev;
       const from = prev[columnKeyFrom].filter((i) => i.id !== id);
-      const moved = { ...item, done: columnKeyTo === "done", updatedAt: new Date().toISOString() };
+      const moved = {
+        ...item,
+        done: columnKeyTo === "done",
+        updatedAt: new Date().toISOString(),
+      };
       const to = [...prev[columnKeyTo], moved];
       return { ...prev, [columnKeyFrom]: from, [columnKeyTo]: to };
     });
@@ -273,9 +283,24 @@ function App() {
   return (
     <div className="page">
       <div className="board">
-        <Column title="To Do" columnKey="todo" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers }} />
-        <Column title="In Progress" columnKey="inprogress" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers }} />
-        <Column title="Done" columnKey="done" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers }} />
+        <Column
+          title="To Do"
+          columnKey="todo"
+          refs={{ todoRef, inprogressRef, doneRef, editInputRef }}
+          state={{ columns, editing, menuOpen, handlers }}
+        />
+        <Column
+          title="In Progress"
+          columnKey="inprogress"
+          refs={{ todoRef, inprogressRef, doneRef, editInputRef }}
+          state={{ columns, editing, menuOpen, handlers }}
+        />
+        <Column
+          title="Done"
+          columnKey="done"
+          refs={{ todoRef, inprogressRef, doneRef, editInputRef }}
+          state={{ columns, editing, menuOpen, handlers }}
+        />
       </div>
     </div>
   );
