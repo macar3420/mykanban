@@ -1,14 +1,15 @@
 @font-face {
-  font-family: 'Pencilpete';
-  src: url('/fonts/PencilpeteFont-2eE3.ttf') format('truetype'),
-       url('/fonts/Pencilpetefont-844B.otf') format('opentype');
+  font-family: "Pencilpete";
+  src:
+    url("/fonts/PencilpeteFont-2eE3.ttf") format("truetype"),
+    url("/fonts/Pencilpetefont-844B.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 :root {
-  font-family: 'Pencilpete', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Pencilpete", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -167,7 +168,11 @@ button:focus-visible {
   padding: 0.25rem 0.5rem;
 }
 
-.items li .item-menu-wrap { position: relative; margin-left: auto; flex: 0 0 auto; }
+.items li .item-menu-wrap {
+  position: relative;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
 
 .items li .item-menu-btn {
   border: 1px solid rgba(248, 248, 248, 0.3);
