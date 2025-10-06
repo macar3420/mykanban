@@ -1,5 +1,5 @@
-import "./App.css";
 import { useEffect, useRef, useState } from "react";
+import "./App.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -17,6 +17,110 @@ async function api(path, options = {}) {
 
 function normalizeTask(t) {
   return { ...t, done: t.done === 1 || t.done === true };
+}
+
+function Column({ title, columnKey, refs, state }) {
+  const { todoRef, inprogressRef, doneRef, editInputRef } = refs;
+  const { columns, editing, menuOpen } = state;
+  const { handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete } = state.handlers;
+  return (
+    <div className="column">
+      <h3>{title}</h3>
+      <div style={{ display: "flex", gap: ".5rem", marginBottom: "1.75rem" }}>
+        <input
+          type="text"
+          placeholder={"Type"}
+          ref={
+            columnKey === "todo"
+              ? todoRef
+              : columnKey === "inprogress"
+                ? inprogressRef
+                : doneRef
+          }
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAdd(columnKey);
+            }
+          }}
+        />
+        <button type="button" onClick={() => handleAdd(columnKey)}>Add</button>
+      </div>
+      <ul className="items">
+        {columns[columnKey].map((item) => {
+          const isEditing = editing && editing.columnKey === columnKey && editing.id === item.id;
+          const isMenuOpen = menuOpen && menuOpen.columnKey === columnKey && menuOpen.id === item.id;
+          const liClass = `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
+          return (
+            <li
+              key={item.id}
+              className={liClass}
+              onDoubleClick={() => startEdit(columnKey, item.id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                toggleMenu(columnKey, item.id);
+              }}
+            >
+              {isEditing ? (
+                <input
+                  ref={editInputRef}
+                  className="item-input"
+                  type="text"
+                  defaultValue={item.title}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitEdit();
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelEdit();
+                    }
+                  }}
+                />
+              ) : (
+                <span className="item-text">{item.title}</span>
+              )}
+
+              {!isEditing && (
+                <div className="item-menu-wrap">
+                  <button
+                    className="item-menu-btn"
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={isMenuOpen ? "true" : "false"}
+                    onClick={() => toggleMenu(columnKey, item.id)}
+                  >
+                    ⋯
+                  </button>
+                  {isMenuOpen && (
+                    <div className="item-menu" role="menu">
+                      <button type="button" role="menuitem" onClick={() => startEdit(columnKey, item.id)}>Edit</button>
+                      <button type="button" role="menuitem" onClick={() => handleToggleDone(columnKey, item.id)}>
+                        {item.done ? "Undo done" : "Mark as done"}
+                      </button>
+                      <hr className="menu-divider" />
+                      {columnKey !== "todo" && (
+                        <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "todo")}>Move to To Do</button>
+                      )}
+                      {columnKey !== "inprogress" && (
+                        <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "inprogress")}>Move to In Progress</button>
+                      )}
+                      {columnKey !== "done" && (
+                        <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "done")}>Move to Done</button>
+                      )}
+                      <hr className="menu-divider" />
+                      <button type="button" role="menuitem" onClick={() => handleDelete(columnKey, item.id)}>Delete</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
 
 function App() {
@@ -139,28 +243,7 @@ function App() {
     }
   }
 
-  async function handleMoveToDone(columnKey, id) {
-    if (columnKey === "done") {
-      setMenuOpen(null);
-      return;
-    }
-    try {
-      const updated = await api(`/api/v1/tasks/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({ status: "done", done: true }),
-      });
-      const task = normalizeTask(updated);
-      setColumns((prev) => {
-        const from = prev[columnKey].filter((i) => i.id !== id);
-        const to = [...prev.done, task];
-        return { ...prev, [columnKey]: from, done: to };
-      });
-    } catch (e) {
-      console.error("Move to done failed", e);
-    } finally {
-      setMenuOpen(null);
-    }
-  }
+  // handleMoveToDone removed (unused)
 
   async function handleMoveTo(columnKeyFrom, id, columnKeyTo) {
     if (columnKeyFrom === columnKeyTo) {
@@ -185,108 +268,16 @@ function App() {
     }
   }
 
-  function Column({ title, columnKey }) {
-    return (
-      <div className="column">
-        <h3>{title}</h3>
-        <div style={{ display: "flex", gap: ".5rem", marginBottom: "1.75rem" }}>
-          <input
-            type="text"
-            placeholder={"Type"}
-            ref={columnKey === "todo" ? todoRef : columnKey === "inprogress" ? inprogressRef : doneRef}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAdd(columnKey);
-              }
-            }}
-          />
-          <button type="button" onClick={() => handleAdd(columnKey)}>Add</button>
-        </div>
-        <ul className="items">
-          {columns[columnKey].map((item) => {
-            const isEditing = editing && editing.columnKey === columnKey && editing.id === item.id;
-            const isMenuOpen = menuOpen && menuOpen.columnKey === columnKey && menuOpen.id === item.id;
-            const liClass = `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
-            return (
-              <li
-                key={item.id}
-                className={liClass}
-                onDoubleClick={() => startEdit(columnKey, item.id)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  toggleMenu(columnKey, item.id);
-                }}
-              >
-                {isEditing ? (
-                  <input
-                    ref={editInputRef}
-                    className="item-input"
-                    type="text"
-                    defaultValue={item.title}
-                    autoFocus
-                    onBlur={commitEdit}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        commitEdit();
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        cancelEdit();
-                      }
-                    }}
-                  />
-                ) : (
-                  <span className="item-text">{item.title}</span>
-                )}
-
-                {!isEditing && (
-                  <div className="item-menu-wrap">
-                    <button
-                      className="item-menu-btn"
-                      type="button"
-                      aria-haspopup="menu"
-                      aria-expanded={isMenuOpen ? "true" : "false"}
-                      onClick={() => toggleMenu(columnKey, item.id)}
-                    >
-                      ⋯
-                    </button>
-                    {isMenuOpen && (
-                      <div className="item-menu" role="menu">
-                        <button type="button" role="menuitem" onClick={() => startEdit(columnKey, item.id)}>Edit</button>
-                        <button type="button" role="menuitem" onClick={() => handleToggleDone(columnKey, item.id)}>
-                          {item.done ? "Undo done" : "Mark as done"}
-                        </button>
-                        <div className="menu-divider" role="separator"></div>
-                        {columnKey !== "todo" && (
-                          <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "todo")}>Move to To Do</button>
-                        )}
-                        {columnKey !== "inprogress" && (
-                          <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "inprogress")}>Move to In Progress</button>
-                        )}
-                        {columnKey !== "done" && (
-                          <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "done")}>Move to Done</button>
-                        )}
-                        <div className="menu-divider" role="separator"></div>
-                        <button type="button" role="menuitem" onClick={() => handleDelete(columnKey, item.id)}>Delete</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    );
+  function handlers(obj) {
+    return obj;
   }
 
   return (
     <div className="page">
       <div className="board">
-        <Column title="To Do" columnKey="todo" />
-        <Column title="In Progress" columnKey="inprogress" />
-        <Column title="Done" columnKey="done" />
+        <Column title="To Do" columnKey="todo" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers: handlers({ handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete }) }} />
+        <Column title="In Progress" columnKey="inprogress" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers: handlers({ handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete }) }} />
+        <Column title="Done" columnKey="done" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers: handlers({ handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete }) }} />
       </div>
     </div>
   );
