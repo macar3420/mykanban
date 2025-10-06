@@ -40,3 +40,32 @@ Backend: Node.js (Express)
 Database: PostgreSQL
 DevOps: Docker, GitHub Actions, CI/CD pipeline
 Testing: Unit + integration tests using Jest, Mocha, Cypress, Playwrite, etc.
+
+## Local development
+
+- Backend
+  - From `backend/`: `npm run dev` (listens on http://localhost:3000)
+
+- Frontend
+  - From `frontend/`: `npm run dev` (Vite, usually http://localhost:5173)
+
+## Docker (frontend + backend + MySQL)
+
+Build and start all services:
+
+```
+docker compose up -d --build
+```
+
+Services:
+- API: http://localhost:3000
+- Frontend: http://localhost:8080
+- MySQL: localhost:3306 (root/devpass, db mob_barley)
+
+Stop:
+
+```
+docker compose down
+```
+
+Data persists in Docker volume `mob_mysql_data`.

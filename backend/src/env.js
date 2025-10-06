@@ -1,10 +1,14 @@
 import { z } from "zod/v4";
 
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.coerce.number().default(3000),
+
+  DB_HOST: z.string().default("127.0.0.1"),
+  DB_PORT: z.coerce.number().default(3306),
+  DB_USER: z.string().default("root"),          // or mob_user
+  DB_PASSWORD: z.string().default(""),
+  DB_NAME: z.string().default("mob_barley"),
 });
 
 try {

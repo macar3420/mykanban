@@ -1,13 +1,46 @@
 services:
-  frontend:
-    build:
-      context: ./frontend
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=devpass
+      - MYSQL_DATABASE=mob_barley
     ports:
-      - '8080:80'
+      - '3306:3306'
+    volumes:
+      - mob_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pdevpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: always
+
   backend:
     build:
       context: ./backend
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=devpass
+      - DB_NAME=mob_barley
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
       - '3000:3000'
     restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:3000
+    ports:
+      - '8080:80'
+    restart: always
+
+volumes:
+  mob_mysql_data:

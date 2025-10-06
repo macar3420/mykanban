@@ -1,5 +1,23 @@
 import "./App.css";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+async function api(path, options = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Request failed: ${res.status}`);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function normalizeTask(t) {
+  return { ...t, done: t.done === 1 || t.done === true };
+}
 
 function App() {
   const [columns, setColumns] = useState({
@@ -15,50 +33,82 @@ function App() {
   const [editing, setEditing] = useState(null); // { columnKey, id }
   const [menuOpen, setMenuOpen] = useState(null); // { columnKey, id }
 
-  function handleAdd(columnKey) {
+  // Load tasks from backend on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api("/api/v1/tasks?group=status");
+        setColumns({
+          todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
+          inprogress: Array.isArray(data?.inprogress) ? data.inprogress.map(normalizeTask) : [],
+          done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+        });
+      } catch (e) {
+        console.error("Failed to load tasks", e);
+      }
+    })();
+  }, []);
+
+  async function handleAdd(columnKey) {
     const map = { todo: todoRef, inprogress: inprogressRef, done: doneRef };
     const ref = map[columnKey];
     const value = ref?.current?.value ?? "";
     const text = value.trim();
     if (!text) return;
-    setColumns((prev) => ({
-      ...prev,
-      [columnKey]: [
-        ...prev[columnKey],
-        {
-          id: `${columnKey}-${Date.now()}`,
-          title: text,
-          createdAt: new Date().toISOString(),
-          done: false,
-        },
-      ],
-    }));
-    if (ref?.current) ref.current.value = "";
+
+    try {
+      const created = await api("/api/v1/tasks", {
+        method: "POST",
+        body: JSON.stringify({ title: text, status: columnKey }),
+      });
+      const task = normalizeTask(created);
+      setColumns((prev) => ({
+        ...prev,
+        [columnKey]: [...prev[columnKey], task],
+      }));
+      if (ref?.current) ref.current.value = "";
+    } catch (e) {
+      console.error("Create failed", e);
+    }
   }
 
-  function handleDelete(columnKey, id) {
-    setColumns((prev) => ({
-      ...prev,
-      [columnKey]: prev[columnKey].filter((item) => item.id !== id),
-    }));
+  async function handleDelete(columnKey, id) {
+    try {
+      await api(`/api/v1/tasks/${id}`, { method: "DELETE" });
+      setColumns((prev) => ({
+        ...prev,
+        [columnKey]: prev[columnKey].filter((item) => item.id !== id),
+      }));
+    } catch (e) {
+      console.error("Delete failed", e);
+    }
   }
 
   function startEdit(columnKey, id) {
     setEditing({ columnKey, id });
   }
 
-  function commitEdit() {
+  async function commitEdit() {
     if (!editing) return;
     const { columnKey, id } = editing;
     const value = editInputRef.current?.value ?? "";
     const text = value.trim();
-    setColumns((prev) => ({
-      ...prev,
-      [columnKey]: prev[columnKey].map((item) =>
-        item.id === id && text ? { ...item, title: text, updatedAt: new Date().toISOString() } : item
-      ),
-    }));
     setEditing(null);
+    if (!text) return;
+
+    try {
+      const updated = await api(`/api/v1/tasks/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ title: text }),
+      });
+      const task = normalizeTask(updated);
+      setColumns((prev) => ({
+        ...prev,
+        [columnKey]: prev[columnKey].map((item) => (item.id === id ? task : item)),
+      }));
+    } catch (e) {
+      console.error("Update failed", e);
+    }
   }
 
   function cancelEdit() {
@@ -67,49 +117,72 @@ function App() {
 
   function toggleMenu(columnKey, id) {
     setMenuOpen((prev) =>
-      prev && prev.columnKey === columnKey && prev.id === id ? null : { columnKey, id }
+      prev && prev.columnKey === columnKey && prev.id === id ? null : { columnKey, id },
     );
   }
 
-  function handleToggleDone(columnKey, id) {
-    setColumns((prev) => ({
-      ...prev,
-      [columnKey]: prev[columnKey].map((item) =>
-        item.id === id ? { ...item, done: !item.done, updatedAt: new Date().toISOString() } : item
-      ),
-    }));
-    setMenuOpen(null);
+  async function handleToggleDone(columnKey, id) {
+    try {
+      const current = columns[columnKey].find((i) => i.id === id);
+      const updated = await api(`/api/v1/tasks/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ done: !current.done }),
+      });
+      const task = normalizeTask(updated);
+      setColumns((prev) => ({
+        ...prev,
+        [columnKey]: prev[columnKey].map((item) => (item.id === id ? task : item)),
+      }));
+      setMenuOpen(null);
+    } catch (e) {
+      console.error("Toggle failed", e);
+    }
   }
 
-  function handleMoveToDone(columnKey, id) {
+  async function handleMoveToDone(columnKey, id) {
     if (columnKey === "done") {
       setMenuOpen(null);
       return;
     }
-    setColumns((prev) => {
-      const item = prev[columnKey].find((i) => i.id === id);
-      if (!item) return prev;
-      const from = prev[columnKey].filter((i) => i.id !== id);
-      const to = [...prev.done, { ...item, done: true, updatedAt: new Date().toISOString() }];
-      return { ...prev, [columnKey]: from, done: to };
-    });
-    setMenuOpen(null);
+    try {
+      const updated = await api(`/api/v1/tasks/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: "done", done: true }),
+      });
+      const task = normalizeTask(updated);
+      setColumns((prev) => {
+        const from = prev[columnKey].filter((i) => i.id !== id);
+        const to = [...prev.done, task];
+        return { ...prev, [columnKey]: from, done: to };
+      });
+    } catch (e) {
+      console.error("Move to done failed", e);
+    } finally {
+      setMenuOpen(null);
+    }
   }
 
-  function handleMoveTo(columnKeyFrom, id, columnKeyTo) {
+  async function handleMoveTo(columnKeyFrom, id, columnKeyTo) {
     if (columnKeyFrom === columnKeyTo) {
       setMenuOpen(null);
       return;
     }
-    setColumns((prev) => {
-      const item = prev[columnKeyFrom].find((i) => i.id === id);
-      if (!item) return prev;
-      const from = prev[columnKeyFrom].filter((i) => i.id !== id);
-      const moved = { ...item, done: columnKeyTo === "done", updatedAt: new Date().toISOString() };
-      const to = [...prev[columnKeyTo], moved];
-      return { ...prev, [columnKeyFrom]: from, [columnKeyTo]: to };
-    });
-    setMenuOpen(null);
+    try {
+      const updated = await api(`/api/v1/tasks/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: columnKeyTo, done: columnKeyTo === "done" }),
+      });
+      const task = normalizeTask(updated);
+      setColumns((prev) => {
+        const from = prev[columnKeyFrom].filter((i) => i.id !== id);
+        const to = [...prev[columnKeyTo], task];
+        return { ...prev, [columnKeyFrom]: from, [columnKeyTo]: to };
+      });
+    } catch (e) {
+      console.error("Move failed", e);
+    } finally {
+      setMenuOpen(null);
+    }
   }
 
   function Column({ title, columnKey }) {
@@ -119,7 +192,7 @@ function App() {
         <div style={{ display: "flex", gap: ".5rem", marginBottom: "1.75rem" }}>
           <input
             type="text"
-            placeholder={`Type`}
+            placeholder={"Type"}
             ref={columnKey === "todo" ? todoRef : columnKey === "inprogress" ? inprogressRef : doneRef}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
