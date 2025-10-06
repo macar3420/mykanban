@@ -23,8 +23,8 @@ services:
       - NODE_ENV=development
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=devpass
+      - DB_USER=mob_user
+      - DB_PASSWORD=STRONG_PASSWORD_HERE
       - DB_NAME=mob_barley
     depends_on:
       mysql:
