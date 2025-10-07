@@ -41,7 +41,9 @@ jobs:
         run: npm run build
 
       # Running the frontend tests
-      # Will be added in Week 40
+      - name: Run Frontend Tests
+        working-directory: ./frontend
+        run: npm run test:run
 
       # Installing the node modules for the backend
       - name: Install Backend Dependencies
