@@ -11,7 +11,8 @@ const reply = (data, status = 200) => ({
 });
 
 beforeEach(() => {
-  const getUrl = (url) => (typeof url === "string" ? url : url?.url ?? url?.href ?? String(url));
+  const getUrl = (url) =>
+    typeof url === "string" ? url : (url?.url ?? url?.href ?? String(url));
   global.fetch = vi.fn((url, opts = {}) => {
     const u = getUrl(url);
     if (u.endsWith("/api/v1/tasks?group=status")) {
@@ -26,7 +27,12 @@ beforeEach(() => {
     if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "PUT") {
       const body = JSON.parse(opts.body || "{}");
       return Promise.resolve(
-        reply({ id: 1, title: body.title ?? "Write tests", status: body.status ?? "todo", done: body.done ? 1 : 0 }),
+        reply({
+          id: 1,
+          title: body.title ?? "Write tests",
+          status: body.status ?? "todo",
+          done: body.done ? 1 : 0,
+        }),
       );
     }
     if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "DELETE") {
@@ -53,10 +59,8 @@ describe("App", () => {
     await userEvent.click(screen.getAllByRole("button", { name: /add/i })[0]);
 
     // Soft assertion: fetch was called at least once during add flow
-    await waitFor(() => expect(global.fetch.mock.calls.length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(global.fetch.mock.calls.length).toBeGreaterThan(0),
+    );
   });
-
-
 });
-
-

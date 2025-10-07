@@ -1,6 +1,6 @@
 import app from "./app.js";
-import { env } from "./env.js";
 import { initDb } from "./db.js";
+import { env } from "./env.js";
 
 await initDb();
 

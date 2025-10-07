@@ -22,7 +22,16 @@ function normalizeTask(t) {
 function Column({ title, columnKey, refs, state }) {
   const { todoRef, inprogressRef, doneRef, editInputRef } = refs;
   const { columns, editing, menuOpen } = state;
-  const { handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete } = state.handlers;
+  const {
+    handleAdd,
+    startEdit,
+    toggleMenu,
+    commitEdit,
+    cancelEdit,
+    handleToggleDone,
+    handleMoveTo,
+    handleDelete,
+  } = state.handlers;
   return (
     <div className="column">
       <h3>{title}</h3>
@@ -44,13 +53,22 @@ function Column({ title, columnKey, refs, state }) {
             }
           }}
         />
-        <button type="button" onClick={() => handleAdd(columnKey)}>Add</button>
+        <button type="button" onClick={() => handleAdd(columnKey)}>
+          Add
+        </button>
       </div>
       <ul className="items">
         {columns[columnKey].map((item) => {
-          const isEditing = editing && editing.columnKey === columnKey && editing.id === item.id;
-          const isMenuOpen = menuOpen && menuOpen.columnKey === columnKey && menuOpen.id === item.id;
-          const liClass = `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
+          const isEditing =
+            editing &&
+            editing.columnKey === columnKey &&
+            editing.id === item.id;
+          const isMenuOpen =
+            menuOpen &&
+            menuOpen.columnKey === columnKey &&
+            menuOpen.id === item.id;
+          const liClass =
+            `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
           return (
             <li
               key={item.id}
@@ -95,22 +113,62 @@ function Column({ title, columnKey, refs, state }) {
                   </button>
                   {isMenuOpen && (
                     <div className="item-menu" role="menu">
-                      <button type="button" role="menuitem" onClick={() => startEdit(columnKey, item.id)}>Edit</button>
-                      <button type="button" role="menuitem" onClick={() => handleToggleDone(columnKey, item.id)}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => startEdit(columnKey, item.id)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleToggleDone(columnKey, item.id)}
+                      >
                         {item.done ? "Undo done" : "Mark as done"}
                       </button>
                       <hr className="menu-divider" />
                       {columnKey !== "todo" && (
-                        <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "todo")}>Move to To Do</button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() =>
+                            handleMoveTo(columnKey, item.id, "todo")
+                          }
+                        >
+                          Move to To Do
+                        </button>
                       )}
                       {columnKey !== "inprogress" && (
-                        <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "inprogress")}>Move to In Progress</button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() =>
+                            handleMoveTo(columnKey, item.id, "inprogress")
+                          }
+                        >
+                          Move to In Progress
+                        </button>
                       )}
                       {columnKey !== "done" && (
-                        <button type="button" role="menuitem" onClick={() => handleMoveTo(columnKey, item.id, "done")}>Move to Done</button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() =>
+                            handleMoveTo(columnKey, item.id, "done")
+                          }
+                        >
+                          Move to Done
+                        </button>
                       )}
                       <hr className="menu-divider" />
-                      <button type="button" role="menuitem" onClick={() => handleDelete(columnKey, item.id)}>Delete</button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleDelete(columnKey, item.id)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   )}
                 </div>
@@ -144,7 +202,9 @@ function App() {
         const data = await api("/api/v1/tasks?group=status");
         setColumns({
           todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
-          inprogress: Array.isArray(data?.inprogress) ? data.inprogress.map(normalizeTask) : [],
+          inprogress: Array.isArray(data?.inprogress)
+            ? data.inprogress.map(normalizeTask)
+            : [],
           done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
         });
       } catch (e) {
@@ -208,7 +268,9 @@ function App() {
       const task = normalizeTask(updated);
       setColumns((prev) => ({
         ...prev,
-        [columnKey]: prev[columnKey].map((item) => (item.id === id ? task : item)),
+        [columnKey]: prev[columnKey].map((item) =>
+          item.id === id ? task : item,
+        ),
       }));
     } catch (e) {
       console.error("Update failed", e);
@@ -221,7 +283,9 @@ function App() {
 
   function toggleMenu(columnKey, id) {
     setMenuOpen((prev) =>
-      prev && prev.columnKey === columnKey && prev.id === id ? null : { columnKey, id },
+      prev && prev.columnKey === columnKey && prev.id === id
+        ? null
+        : { columnKey, id },
     );
   }
 
@@ -235,7 +299,9 @@ function App() {
       const task = normalizeTask(updated);
       setColumns((prev) => ({
         ...prev,
-        [columnKey]: prev[columnKey].map((item) => (item.id === id ? task : item)),
+        [columnKey]: prev[columnKey].map((item) =>
+          item.id === id ? task : item,
+        ),
       }));
       setMenuOpen(null);
     } catch (e) {
@@ -253,7 +319,10 @@ function App() {
     try {
       const updated = await api(`/api/v1/tasks/${id}`, {
         method: "PUT",
-        body: JSON.stringify({ status: columnKeyTo, done: columnKeyTo === "done" }),
+        body: JSON.stringify({
+          status: columnKeyTo,
+          done: columnKeyTo === "done",
+        }),
       });
       const task = normalizeTask(updated);
       setColumns((prev) => {
@@ -275,9 +344,66 @@ function App() {
   return (
     <div className="page">
       <div className="board">
-        <Column title="To Do" columnKey="todo" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers: handlers({ handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete }) }} />
-        <Column title="In Progress" columnKey="inprogress" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers: handlers({ handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete }) }} />
-        <Column title="Done" columnKey="done" refs={{ todoRef, inprogressRef, doneRef, editInputRef }} state={{ columns, editing, menuOpen, handlers: handlers({ handleAdd, startEdit, toggleMenu, commitEdit, cancelEdit, handleToggleDone, handleMoveTo, handleDelete }) }} />
+        <Column
+          title="To Do"
+          columnKey="todo"
+          refs={{ todoRef, inprogressRef, doneRef, editInputRef }}
+          state={{
+            columns,
+            editing,
+            menuOpen,
+            handlers: handlers({
+              handleAdd,
+              startEdit,
+              toggleMenu,
+              commitEdit,
+              cancelEdit,
+              handleToggleDone,
+              handleMoveTo,
+              handleDelete,
+            }),
+          }}
+        />
+        <Column
+          title="In Progress"
+          columnKey="inprogress"
+          refs={{ todoRef, inprogressRef, doneRef, editInputRef }}
+          state={{
+            columns,
+            editing,
+            menuOpen,
+            handlers: handlers({
+              handleAdd,
+              startEdit,
+              toggleMenu,
+              commitEdit,
+              cancelEdit,
+              handleToggleDone,
+              handleMoveTo,
+              handleDelete,
+            }),
+          }}
+        />
+        <Column
+          title="Done"
+          columnKey="done"
+          refs={{ todoRef, inprogressRef, doneRef, editInputRef }}
+          state={{
+            columns,
+            editing,
+            menuOpen,
+            handlers: handlers({
+              handleAdd,
+              startEdit,
+              toggleMenu,
+              commitEdit,
+              cancelEdit,
+              handleToggleDone,
+              handleMoveTo,
+              handleDelete,
+            }),
+          }}
+        />
       </div>
     </div>
   );

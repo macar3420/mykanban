@@ -8,7 +8,7 @@ router.get("/", async (req, res, next) => {
   try {
     const db = getDbPool();
     const [rows] = await db.query(
-      "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks ORDER BY id DESC"
+      "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks ORDER BY id DESC",
     );
 
     if (String(req.query.group || "").toLowerCase() === "status") {
@@ -32,17 +32,19 @@ router.post("/", async (req, res, next) => {
       res.status(400);
       throw new Error("title is required");
     }
-    const normalizedStatus = ["todo", "inprogress", "done"].includes(status) ? status : "todo";
+    const normalizedStatus = ["todo", "inprogress", "done"].includes(status)
+      ? status
+      : "todo";
     const db = getDbPool();
 
     const [result] = await db.query(
       "INSERT INTO tasks (title, status, done) VALUES (?, ?, ?)",
-      [title, normalizedStatus, normalizedStatus === "done" ? 1 : 0]
+      [title, normalizedStatus, normalizedStatus === "done" ? 1 : 0],
     );
 
     const [rows] = await db.query(
       "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks WHERE id = ?",
-      [result.insertId]
+      [result.insertId],
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -83,11 +85,14 @@ router.put("/:id", async (req, res, next) => {
 
     const db = getDbPool();
     params.push(id);
-    await db.query(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`, params);
+    await db.query(
+      `UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`,
+      params,
+    );
 
     const [rows] = await db.query(
       "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks WHERE id = ?",
-      [id]
+      [id],
     );
     if (!rows[0]) {
       res.status(404);
