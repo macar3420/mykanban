@@ -11,9 +11,9 @@
   },
   "keywords": [],
   "main": "src/index.js",
-  
+
 "scripts": {
-  "start": "node --env-file=.env src/index.js",
+  "start": "node src/index.js",
   "dev": "node --watch --env-file=.env src/index.js",
   "lint": "biome check --fix ./src",
   "test": "vitest run"
