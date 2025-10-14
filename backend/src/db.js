@@ -5,12 +5,31 @@ let pool;
 
 export function getDbPool() {
   if (!pool) {
+    const sslConfig = (() => {
+      if (!env.DB_SSL) return undefined;
+      // Prefer explicit CA if given
+      if (env.DB_SSL_CA && env.DB_SSL_CA.trim().length > 0) {
+        return { ca: env.DB_SSL_CA };
+      }
+      if (env.DB_SSL_CA_PATH && env.DB_SSL_CA_PATH.trim().length > 0) {
+        try {
+          const fs = require("fs");
+          const ca = fs.readFileSync(env.DB_SSL_CA_PATH, "utf8");
+          return { ca };
+        } catch {}
+      }
+      // Fallback: allow insecure (not recommended) only if explicitly requested via DB_SSL=true with no CA
+      // For local dev containers that lack root CAs, you can set DB_SSL=false instead.
+      return { rejectUnauthorized: false };
+    })();
+
     pool = mysql.createPool({
       host: env.DB_HOST,
       port: env.DB_PORT,
       user: env.DB_USER,
       password: env.DB_PASSWORD,
       database: env.DB_NAME,
+      ssl: sslConfig,
       connectionLimit: 10,
       waitForConnections: true,
       queueLimit: 0,

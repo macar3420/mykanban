@@ -1,0 +1,103 @@
+/* Fill Text Animation Styles */
+.fill-animation-container {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin-bottom: 2.5rem;
+  background: var(--background-color, #000000);
+  position: relative;
+  width: 100%;
+}
+
+.fill-animation-wrapper {
+  background: transparent;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+}
+
+/* Fill text animation styles */
+.fill-text {
+  font-family:
+    "Rudiment", "Pencilpete", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  background: linear-gradient(
+    90deg,
+    var(--fill-color, #ffffff) 0%,
+    var(--fill-color, #ffffff) 50%,
+    #636363 50%,
+    #636363 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+}
+
+.fill-subtitle {
+  font-family:
+    "Rudiment", "Pencilpete", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 1.4rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .fill-text {
+    font-size: 2.5rem;
+  }
+
+  .fill-subtitle {
+    font-size: 1rem;
+  }
+
+  .fill-animation-wrapper {
+    padding: 40px 20px;
+    margin: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fill-text {
+    font-size: 2rem;
+  }
+
+  .fill-subtitle {
+    font-size: 0.9rem;
+  }
+}
+
+/* Custom styling classes for easy customization */
+.fill-animation-wrapper.compact {
+  padding: 10px 20px;
+  max-width: 400px;
+  background: transparent;
+}
+
+.fill-animation-wrapper.large {
+  padding: 80px 60px;
+  max-width: 800px;
+}
+
+.fill-text.small {
+  font-size: 2rem;
+}
+
+.fill-text.large {
+  font-size: 4.5rem;
+}
+
+.fill-text.extra-large {
+  font-size: 6rem;
+}

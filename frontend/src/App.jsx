@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
+import FillTextAnimation from "./components/FillTextAnimation.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -343,6 +344,15 @@ function App() {
 
   return (
     <div className="page">
+      <FillTextAnimation
+        text="Hey, Mustafa !"
+        fillColor="#ffffff"
+        backgroundColor="transparent"
+        subtitle="Organize your tasks with style"
+        animationDuration={3}
+        delay={0.2}
+        containerClassName="compact"
+      />
       <div className="board">
         <Column
           title="To Do"

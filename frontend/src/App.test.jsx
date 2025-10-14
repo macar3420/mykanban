@@ -3,6 +3,27 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, vi } from "vitest";
 import App from "./App.jsx";
 
+// Mock framer-motion to avoid animation issues in tests
+vi.mock("framer-motion", () => ({
+  motion: {
+    div: ({ children, className, variants, initial, animate, ...props }) => (
+      <div className={className} {...props}>
+        {children}
+      </div>
+    ),
+    h1: ({ children, className, variants, initial, animate, ...props }) => (
+      <h1 className={className} {...props}>
+        {children}
+      </h1>
+    ),
+    p: ({ children, className, variants, initial, animate, ...props }) => (
+      <p className={className} {...props}>
+        {children}
+      </p>
+    ),
+  },
+}));
+
 const reply = (data, status = 200) => ({
   ok: status >= 200 && status < 300,
   status,
@@ -62,5 +83,40 @@ describe("App", () => {
     await waitFor(() =>
       expect(global.fetch.mock.calls.length).toBeGreaterThan(0),
     );
+  });
+
+  test("renders FillTextAnimation component with correct text", () => {
+    render(<App />);
+
+    // Use a more flexible text matcher to handle potential spacing issues
+    expect(screen.getByText(/Hey, Mustafa\s*!/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Organize your tasks with style"),
+    ).toBeInTheDocument();
+  });
+
+  test("renders all main UI elements", () => {
+    render(<App />);
+
+    // Check main heading
+    expect(screen.getByText(/Hey, Mustafa\s*!/)).toBeInTheDocument();
+
+    // Check subtitle
+    expect(
+      screen.getByText("Organize your tasks with style"),
+    ).toBeInTheDocument();
+
+    // Check column headers
+    expect(screen.getByText("To Do")).toBeInTheDocument();
+    expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByText("Done")).toBeInTheDocument();
+
+    // Check input placeholders
+    const inputs = screen.getAllByPlaceholderText("Type");
+    expect(inputs).toHaveLength(3);
+
+    // Check Add buttons
+    const addButtons = screen.getAllByRole("button", { name: /add/i });
+    expect(addButtons).toHaveLength(3);
   });
 });
