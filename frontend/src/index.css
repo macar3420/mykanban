@@ -41,15 +41,23 @@ a:hover {
   color: #0a200a;
 }
 
+html {
+  height: 100%;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("/images/bg.jpg") center / cover no-repeat;
+  background-attachment: fixed;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  background: url("/images/bg.jpg") center / cover no-repeat fixed;
 }
 
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  margin-top: 1.5rem;
 }
 
 button {
@@ -94,11 +102,16 @@ button:focus-visible {
   gap: 1rem;
 }
 
+/* Auth page specific styling */
+.auth-page {
+  justify-content: center;
+}
+
 .board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, minmax(300px, 1fr));
   gap: 1.5rem;
-  width: min(1400px, 100%);
+  width: min(1200px, 100%);
 }
 
 .column {
@@ -114,6 +127,7 @@ button:focus-visible {
 .column h3 {
   margin: 0 0 0.75rem 0;
   font-size: 2rem;
+  text-align: center;
 }
 
 .items {
@@ -236,6 +250,13 @@ button:focus-visible {
   opacity: 0.8;
 }
 
+/* Column input group styling */
+.column-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
 /* Make add-item input expand */
 .column input {
   flex: 1;
@@ -246,4 +267,320 @@ button:focus-visible {
   border-top: 1px solid rgba(255, 255, 255, 0.25);
   padding-top: 1rem;
   margin-top: 0.5rem;
+}
+
+/* Base sizing for header info */
+.user-header {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-top: -1.75rem;
+}
+.user-logout-btn{
+  margin-top: -1.75rem;
+}
+
+/* Larger resolution enhancements */
+
+@media (min-width: 1920px) {
+  .board {
+    grid-template-columns: repeat(3, minmax(460px, 1fr));
+    gap: 2.25rem;
+    width: min(1400px, 100%);
+  }
+  .column {
+    padding: 1.5rem;
+    border-radius: 14px;
+  }
+  .column h3 {
+    font-size: 2.5rem;
+  }
+  .items li {
+    font-size: 1.5rem;
+  }
+  /* Make the top Type input and Add button larger on big displays */
+  .column input {
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+    border-radius: 8px;
+  }
+  .column button:not(.item-actions):not(.item-menu-btn) {
+    padding: 0.75rem 1.25rem;
+    font-size: 1.05rem;
+    border-radius: 8px;
+  }
+  /* Signed as + Logout sizing */
+  .user-info {
+    font-size: 1.4rem;
+    font-weight:600;
+  }
+  .user-info + button {
+    padding: 0.75rem 1.25rem;
+    font-size: 1.05rem;
+    border-radius: 8px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .board {
+    grid-template-columns: repeat(3, minmax(400px, 1fr));
+    gap: 2.5rem;
+    width: min(2000px, 100%);
+  }
+  .column {
+    padding: 2rem;
+    border-radius: 16px;
+  }
+  .column h3 {
+    font-size: 3rem;
+  }
+  .items li {
+    font-size: 1.75rem;
+    margin-bottom: 2rem;
+  }
+  .column input {
+    padding: 1rem 1.25rem;
+    font-size: 1.25rem;
+    border-radius: 10px;
+  }
+  .column button:not(.item-actions):not(.item-menu-btn) {
+    padding: 1rem 1.75rem;
+    font-size: 1.2rem;
+    border-radius: 10px;
+  }
+  .user-info {
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+  .user-info + button {
+    padding: 1rem 1.75rem;
+    font-size: 1.2rem;
+    border-radius: 10px;
+  }
+}
+
+@media (min-width: 3840px) {
+  .board {
+    grid-template-columns: repeat(3, minmax(480px, 1fr));
+    gap: 3rem;
+    width: min(2400px, 100%);
+  }
+  .column {
+    padding: 2.5rem;
+    border-radius: 18px;
+  }
+  .column h3 {
+    font-size: 3.5rem;
+  }
+  .items li {
+    font-size: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .column input {
+    padding: 1.25rem 1.5rem;
+    font-size: 1.35rem;
+    border-radius: 12px;
+  }
+  .column button:not(.item-actions):not(.item-menu-btn) {
+    padding: 1.25rem 2rem;
+    font-size: 1.3rem;
+    border-radius: 12px;
+  }
+  .user-info {
+    font-size: 2.9rem;
+    font-weight: 600;
+  }
+  .user-info + button {
+    padding: 1.25rem 2rem;
+    font-size: 2.3rem;
+    border-radius: 12px;
+  }
+}
+
+/* Authentication form styles */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(360px, 90vw);
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 8px;
+}
+
+.auth-form h3 {
+  margin: 0;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.auth-form input {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.auth-form input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.auth-form button[type="submit"] {
+  padding: 0.75rem;
+  font-size: 1rem;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.auth-form button[type="submit"]:hover {
+  border-color: #f8f8fe;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+}
+
+.auth-links button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+}
+
+.auth-message {
+  margin-top: 0.75rem;
+  color: #fff;
+  opacity: 0.9;
+  text-align: center;
+}
+
+/* Larger resolution enhancements for auth forms */
+@media (min-width: 1440px) {
+  .auth-form {
+    width: min(420px, 90vw);
+    padding: 1.25rem;
+    gap: 0.75rem;
+  }
+
+  .auth-form h3 {
+    font-size: 1.75rem;
+  }
+
+  .auth-form input {
+    padding: 0.875rem;
+    font-size: 1.1rem;
+  }
+
+  .auth-form button[type="submit"] {
+    padding: 0.875rem;
+    font-size: 1.1rem;
+  }
+
+  .auth-links button {
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  .auth-form {
+    width: min(480px, 90vw);
+    padding: 1.5rem;
+    gap: 1rem;
+    border-radius: 12px;
+  }
+
+  .auth-form h3 {
+    font-size: 2rem;
+  }
+
+  .auth-form input {
+    padding: 1rem;
+    font-size: 1.2rem;
+    border-radius: 8px;
+  }
+
+  .auth-form button[type="submit"] {
+    padding: 1rem;
+    font-size: 1.2rem;
+    border-radius: 8px;
+  }
+
+  .auth-links button {
+    font-size: 1.1rem;
+  }
+}
+
+@media (min-width: 2560px) {
+  .auth-form {
+    width: min(560px, 90vw);
+    padding: 2rem;
+    gap: 1.25rem;
+    border-radius: 14px;
+  }
+
+  .auth-form h3 {
+    font-size: 2.5rem;
+  }
+
+  .auth-form input {
+    padding: 1.25rem;
+    font-size: 1.4rem;
+    border-radius: 10px;
+  }
+
+  .auth-form button[type="submit"] {
+    padding: 1.25rem;
+    font-size: 1.4rem;
+    border-radius: 10px;
+  }
+
+  .auth-links button {
+    font-size: 1.3rem;
+  }
+}
+
+@media (min-width: 3840px) {
+  .auth-form {
+    width: min(680px, 90vw);
+    padding: 2.5rem;
+    gap: 1.5rem;
+    border-radius: 16px;
+  }
+
+  .auth-form h3 {
+    font-size: 3rem;
+  }
+
+  .auth-form input {
+    padding: 1.5rem;
+    font-size: 1.6rem;
+    border-radius: 12px;
+  }
+
+  .auth-form button[type="submit"] {
+    padding: 1.5rem;
+    font-size: 1.6rem;
+    border-radius: 12px;
+  }
+
+  .auth-links button {
+    font-size: 1.5rem;
+  }
 }

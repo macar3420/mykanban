@@ -1,14 +1,49 @@
 import express from "express";
 import { getDbPool } from "../db.js";
 
+// Resolve the current user (if any) from cookie-session
+async function getCurrentUser(req) {
+  const token = req.cookies?.sid;
+  if (!token) return null;
+  const db = getDbPool();
+  const [[row]] = await db.query(
+    `SELECT u.id, u.display_name FROM sessions s JOIN users u ON u.id = s.user_id
+     WHERE s.token = ? AND s.expires_at > NOW()`,
+    [token],
+  );
+  return row || null;
+}
+
+async function getAccessibleBoardIds(db, user) {
+  if (!user) {
+    // Fallback: allow default board (legacy unauth usage)
+    const [[b]] = await db.query("SELECT id FROM boards ORDER BY id ASC LIMIT 1");
+    return b ? [b.id] : [];
+  }
+  const [rows] = await db.query(
+    `SELECT b.id
+     FROM boards b
+     LEFT JOIN team_members tm ON tm.team_id = b.team_id AND tm.user_id = ?
+     WHERE b.owner_user_id = ? OR tm.user_id IS NOT NULL`,
+    [user.id, user.id],
+  );
+  return rows.map((r) => r.id);
+}
+
 const router = express.Router();
 
 // GET /api/v1/tasks?group=status
 router.get("/", async (req, res, next) => {
   try {
     const db = getDbPool();
+    const me = await getCurrentUser(req);
+    const boardIds = await getAccessibleBoardIds(db, me);
+    if (boardIds.length === 0) return res.json({ todo: [], inprogress: [], done: [] });
     const [rows] = await db.query(
-      "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks ORDER BY id DESC",
+      `SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt
+       FROM tasks WHERE board_id IN (${boardIds.map(() => "?").join(",")})
+       ORDER BY id DESC`,
+      boardIds,
     );
 
     if (String(req.query.group || "").toLowerCase() === "status") {
@@ -36,10 +71,13 @@ router.post("/", async (req, res, next) => {
       ? status
       : "todo";
     const db = getDbPool();
+    const me = await getCurrentUser(req);
+    const boardIds = await getAccessibleBoardIds(db, me);
+    const boardId = boardIds[0] || null;
 
     const [result] = await db.query(
-      "INSERT INTO tasks (title, status, done) VALUES (?, ?, ?)",
-      [title, normalizedStatus, normalizedStatus === "done" ? 1 : 0],
+      "INSERT INTO tasks (title, status, done, board_id) VALUES (?, ?, ?, ?)",
+      [title, normalizedStatus, normalizedStatus === "done" ? 1 : 0, boardId],
     );
 
     const [rows] = await db.query(
@@ -85,10 +123,7 @@ router.put("/:id", async (req, res, next) => {
 
     const db = getDbPool();
     params.push(id);
-    await db.query(
-      `UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`,
-      params,
-    );
+    await db.query(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`, params);
 
     const [rows] = await db.query(
       "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks WHERE id = ?",

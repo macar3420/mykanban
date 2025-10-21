@@ -25,6 +25,7 @@ const envSchema = z.object({
   DB_SSL_CA: z.string().optional(),
   // Optional path to a PEM file inside the container/FS
   DB_SSL_CA_PATH: z.string().optional(),
+  FRONTEND_BASE_URL: z.string().optional(),
 });
 
 try {

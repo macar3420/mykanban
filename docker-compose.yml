@@ -21,16 +21,16 @@ services:
     environment: # .env gitignored
       - PORT=3000
       - NODE_ENV=development
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_SSL=${DB_SSL}
-    # Remove dependency on local mysql when using RDS
-    # depends_on:
-    #   mysql:
-    #     condition: service_healthy
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=devpass
+      - DB_NAME=mob_barley
+      - DB_SSL=false
+      - FRONTEND_BASE_URL=http://localhost:8080
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
       - '3000:3000'
     restart: always
