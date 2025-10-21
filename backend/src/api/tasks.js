@@ -17,7 +17,9 @@ async function getCurrentUser(req) {
 async function getAccessibleBoardIds(db, user) {
   if (!user) {
     // Fallback: allow default board (legacy unauth usage)
-    const [[b]] = await db.query("SELECT id FROM boards ORDER BY id ASC LIMIT 1");
+    const [[b]] = await db.query(
+      "SELECT id FROM boards ORDER BY id ASC LIMIT 1",
+    );
     return b ? [b.id] : [];
   }
   const [rows] = await db.query(
@@ -38,7 +40,8 @@ router.get("/", async (req, res, next) => {
     const db = getDbPool();
     const me = await getCurrentUser(req);
     const boardIds = await getAccessibleBoardIds(db, me);
-    if (boardIds.length === 0) return res.json({ todo: [], inprogress: [], done: [] });
+    if (boardIds.length === 0)
+      return res.json({ todo: [], inprogress: [], done: [] });
     const [rows] = await db.query(
       `SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt
        FROM tasks WHERE board_id IN (${boardIds.map(() => "?").join(",")})
@@ -123,7 +126,10 @@ router.put("/:id", async (req, res, next) => {
 
     const db = getDbPool();
     params.push(id);
-    await db.query(`UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`, params);
+    await db.query(
+      `UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`,
+      params,
+    );
 
     const [rows] = await db.query(
       "SELECT id, title, status, done, created_at AS createdAt, updated_at AS updatedAt FROM tasks WHERE id = ?",

@@ -292,8 +292,13 @@ function App() {
     const email = String(form.get("email") || "").trim();
     if (!email) return;
     try {
-      await api("/api/v1/auth/forgot", { method: "POST", body: JSON.stringify({ email }) });
-      setAuthMessage("If the email exists, a reset link was sent. In dev, the token is logged in backend.");
+      await api("/api/v1/auth/forgot", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setAuthMessage(
+        "If the email exists, a reset link was sent. In dev, the token is logged in backend.",
+      );
     } catch {
       setAuthMessage("Request received. Check your email if it exists.");
     }
@@ -307,10 +312,13 @@ function App() {
     const newPassword = String(form.get("newPassword") || "").trim();
     if (!token || !newPassword) return;
     try {
-      await api("/api/v1/auth/reset", { method: "POST", body: JSON.stringify({ token, newPassword }) });
+      await api("/api/v1/auth/reset", {
+        method: "POST",
+        body: JSON.stringify({ token, newPassword }),
+      });
       setAuthMessage("Password updated. You can now sign in.");
       setAuthMode("login");
-    } catch (err) {
+    } catch (_err) {
       setAuthMessage("Invalid or expired token.");
     }
   }
@@ -446,7 +454,16 @@ function App() {
   // Gate: show login-only view until authenticated
   if (!user) {
     return (
-      <div className="page" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div
+        className="page"
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <FillTextAnimation
           text="Welcome"
           fillColor="#ffffff"
@@ -459,42 +476,99 @@ function App() {
         {authMode === "login" ? (
           <form className="auth-form" onSubmit={handleLogin}>
             <h3>Sign in</h3>
-            <input name="identifier" type="text" placeholder="Email or username" required />
-            <input name="password" type="password" placeholder="Password" required />
+            <input
+              name="identifier"
+              type="text"
+              placeholder="Email or username"
+              required
+            />
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              required
+            />
             <button type="submit">Login</button>
             <div className="auth-links">
-              <button type="button" onClick={() => setAuthMode("signup")}>Create an account</button>
-              <button type="button" onClick={() => setAuthMode("forgot")}>Forgot password?</button>
+              <button type="button" onClick={() => setAuthMode("signup")}>
+                Create an account
+              </button>
+              <button type="button" onClick={() => setAuthMode("forgot")}>
+                Forgot password?
+              </button>
             </div>
           </form>
         ) : authMode === "signup" ? (
           <form className="auth-form" onSubmit={handleSignup}>
             <h3>Sign up</h3>
-            <input name="displayName" type="text" placeholder="Username" required />
+            <input
+              name="displayName"
+              type="text"
+              placeholder="Username"
+              required
+            />
             <input name="email" type="email" placeholder="Email" required />
-            <input name="password" type="password" placeholder="Password" required />
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              required
+            />
             <button type="submit">Create account</button>
-            <button type="button" onClick={() => setAuthMode("login")}>Already have an account? Log in</button>
+            <button type="button" onClick={() => setAuthMode("login")}>
+              Already have an account? Log in
+            </button>
           </form>
         ) : authMode === "forgot" ? (
           <form className="auth-form" onSubmit={handleForgot}>
             <h3>Forgot password</h3>
-            <input name="email" type="email" placeholder="Your email" required />
+            <input
+              name="email"
+              type="email"
+              placeholder="Your email"
+              required
+            />
             <button type="submit">Send reset link</button>
-            <button type="button" onClick={() => setAuthMode("reset")}>Have a token? Reset here</button>
-            <button type="button" onClick={() => setAuthMode("login")}>Back to sign in</button>
+            <button type="button" onClick={() => setAuthMode("reset")}>
+              Have a token? Reset here
+            </button>
+            <button type="button" onClick={() => setAuthMode("login")}>
+              Back to sign in
+            </button>
           </form>
         ) : (
           <form className="auth-form" onSubmit={handleReset}>
             <h3>Reset password</h3>
-            <input name="token" type="text" placeholder="Paste reset token" required defaultValue={resetToken} />
-            <input name="newPassword" type="password" placeholder="New password" required />
+            <input
+              name="token"
+              type="text"
+              placeholder="Paste reset token"
+              required
+              defaultValue={resetToken}
+            />
+            <input
+              name="newPassword"
+              type="password"
+              placeholder="New password"
+              required
+            />
             <button type="submit">Update password</button>
-            <button type="button" onClick={() => setAuthMode("login")}>Back to sign in</button>
+            <button type="button" onClick={() => setAuthMode("login")}>
+              Back to sign in
+            </button>
           </form>
         )}
         {authMessage && (
-          <div style={{ marginTop: "0.75rem", color: "#fff", opacity: 0.9, textAlign: "center" }}>{authMessage}</div>
+          <div
+            style={{
+              marginTop: "0.75rem",
+              color: "#fff",
+              opacity: 0.9,
+              textAlign: "center",
+            }}
+          >
+            {authMessage}
+          </div>
         )}
       </div>
     );
@@ -513,7 +587,13 @@ function App() {
       />
       <div className="user-header">
         <span className="user-info">Signed in as {user.displayName}</span>
-        <button className="user-logout-btn" type="button" onClick={handleLogout}>Logout</button>
+        <button
+          className="user-logout-btn"
+          type="button"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
       </div>
       <div className="board">
         <Column

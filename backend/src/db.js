@@ -55,7 +55,9 @@ export async function initDb() {
 
   // Ensure display_name is unique to support username-style login
   try {
-    await db.query(`ALTER TABLE users ADD UNIQUE KEY uq_users_display_name (display_name)`);
+    await db.query(
+      `ALTER TABLE users ADD UNIQUE KEY uq_users_display_name (display_name)`,
+    );
   } catch (e) {
     // ER_DUP_KEYNAME (1061) means the unique index already exists
     if (e?.errno !== 1061) throw e;
@@ -150,7 +152,9 @@ export async function initDb() {
 
   // Add board linkage to tasks (idempotent via error-code checks)
   try {
-    await db.query(`ALTER TABLE tasks ADD COLUMN board_id BIGINT UNSIGNED NULL`);
+    await db.query(
+      `ALTER TABLE tasks ADD COLUMN board_id BIGINT UNSIGNED NULL`,
+    );
   } catch (e) {
     // ER_DUP_FIELDNAME (1060) means the column already exists
     if (e?.errno !== 1060) throw e;
@@ -162,7 +166,9 @@ export async function initDb() {
     if (e?.errno !== 1061) throw e;
   }
   try {
-    await db.query(`ALTER TABLE tasks ADD CONSTRAINT fk_tasks_board FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE SET NULL`);
+    await db.query(
+      `ALTER TABLE tasks ADD CONSTRAINT fk_tasks_board FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE SET NULL`,
+    );
   } catch (e) {
     // ER_CANNOT_ADD_FOREIGN (1215) for other issues, ER_DUP_KEYNAME (1061) for existing constraint name varies per version.
     // ER_FK_DUP_NAME (1826) MySQL 8 for duplicate FK name
@@ -171,12 +177,18 @@ export async function initDb() {
 
   // Migration: ensure a default board exists and attach legacy tasks without board
   // Create a singleton default board (owner_user_id NULL) if none exists
-  const [boards] = await db.query("SELECT id FROM boards ORDER BY id ASC LIMIT 1");
+  const [boards] = await db.query(
+    "SELECT id FROM boards ORDER BY id ASC LIMIT 1",
+  );
   let defaultBoardId = boards[0]?.id;
   if (!defaultBoardId) {
-    const [ins] = await db.query("INSERT INTO boards (name) VALUES (?)", ["Default Board"]);
+    const [ins] = await db.query("INSERT INTO boards (name) VALUES (?)", [
+      "Default Board",
+    ]);
     defaultBoardId = ins.insertId;
   }
   // Attach tasks missing board_id to the default board
-  await db.query("UPDATE tasks SET board_id = ? WHERE board_id IS NULL", [defaultBoardId]);
+  await db.query("UPDATE tasks SET board_id = ? WHERE board_id IS NULL", [
+    defaultBoardId,
+  ]);
 }

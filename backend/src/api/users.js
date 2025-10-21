@@ -23,11 +23,17 @@ router.post("/signup", async (req, res, next) => {
   try {
     const { email, password, displayName } = req.body || {};
     if (!email || !password || !displayName) {
-      return res.status(400).json({ error: "email, password, displayName required" });
+      return res
+        .status(400)
+        .json({ error: "email, password, displayName required" });
     }
     const db = getDbPool();
-    const [[existing]] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
-    if (existing) return res.status(409).json({ error: "email already in use" });
+    const [[existing]] = await db.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email],
+    );
+    if (existing)
+      return res.status(409).json({ error: "email already in use" });
 
     const hash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
@@ -37,7 +43,10 @@ router.post("/signup", async (req, res, next) => {
     const userId = result.insertId;
 
     // Create default personal board
-    await db.query("INSERT INTO boards (name, owner_user_id) VALUES (?,?)", ["My Board", userId]);
+    await db.query("INSERT INTO boards (name, owner_user_id) VALUES (?,?)", [
+      "My Board",
+      userId,
+    ]);
 
     // Create session
     const token = crypto.randomBytes(32).toString("hex");
@@ -57,7 +66,10 @@ router.post("/login", async (req, res, next) => {
   try {
     const { identifier, email, password } = req.body || {};
     const idOrEmail = (identifier || email || "").trim();
-    if (!idOrEmail || !password) return res.status(400).json({ error: "identifier/email and password required" });
+    if (!idOrEmail || !password)
+      return res
+        .status(400)
+        .json({ error: "identifier/email and password required" });
     const db = getDbPool();
     const [[user]] = await db.query(
       "SELECT id, password_hash, display_name FROM users WHERE email = ? OR display_name = ?",
@@ -68,7 +80,10 @@ router.post("/login", async (req, res, next) => {
     if (!ok) return res.status(401).json({ error: "invalid credentials" });
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
-    await db.query("INSERT INTO sessions (user_id, token, expires_at) VALUES (?,?,?)", [user.id, token, expires]);
+    await db.query(
+      "INSERT INTO sessions (user_id, token, expires_at) VALUES (?,?,?)",
+      [user.id, token, expires],
+    );
     setSessionCookie(res, token);
     res.json({ id: user.id, email, displayName: user.display_name });
   } catch (e) {
@@ -93,7 +108,9 @@ router.post("/forgot", async (req, res) => {
   if (typeof email === "string" && email.trim()) {
     try {
       const db = getDbPool();
-      const [[user]] = await db.query("SELECT id FROM users WHERE email = ?", [email.trim()]);
+      const [[user]] = await db.query("SELECT id FROM users WHERE email = ?", [
+        email.trim(),
+      ]);
       if (user) {
         const token = crypto.randomBytes(32).toString("hex");
         const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
@@ -127,7 +144,8 @@ router.get("/reset/verify", async (req, res) => {
 // Perform password reset
 router.post("/reset", async (req, res) => {
   const { token, newPassword } = req.body || {};
-  if (!token || !newPassword) return res.status(400).json({ error: "token and newPassword required" });
+  if (!token || !newPassword)
+    return res.status(400).json({ error: "token and newPassword required" });
   const db = getDbPool();
   const [[rt]] = await db.query(
     "SELECT user_id FROM reset_tokens WHERE token = ? AND used_at IS NULL AND expires_at > NOW()",
@@ -135,8 +153,13 @@ router.post("/reset", async (req, res) => {
   );
   if (!rt) return res.status(400).json({ error: "invalid or expired token" });
   const hash = await bcrypt.hash(newPassword, 10);
-  await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [hash, rt.user_id]);
-  await db.query("UPDATE reset_tokens SET used_at = NOW() WHERE token = ?", [token]);
+  await db.query("UPDATE users SET password_hash = ? WHERE id = ?", [
+    hash,
+    rt.user_id,
+  ]);
+  await db.query("UPDATE reset_tokens SET used_at = NOW() WHERE token = ?", [
+    token,
+  ]);
   await db.query("DELETE FROM sessions WHERE user_id = ?", [rt.user_id]);
   res.status(204).end();
 });
@@ -156,5 +179,3 @@ router.get("/me", async (req, res) => {
 });
 
 export default router;
-
-
