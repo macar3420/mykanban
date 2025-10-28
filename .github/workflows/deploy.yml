@@ -23,11 +23,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Set up SSH key (supports passphrase)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Write the private key from secrets to a file
+          printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # If a passphrase is provided, remove it non-interactively into a new file
+          if [ -n "${{ secrets.SSH_PASSPHRASE || '' }}" ]; then
+            ssh-keygen -p -P "${{ secrets.SSH_PASSPHRASE }}" -N "" -f ~/.ssh/deploy_key -m PEM >/dev/null
+          fi
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/deploy_key
 
       - name: Add host to known_hosts
         run: |
@@ -74,5 +84,5 @@ jobs:
       - name: Post-deploy health check
         if: always()
         run: |
-          
+
 
