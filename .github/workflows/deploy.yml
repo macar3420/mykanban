@@ -1,0 +1,78 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches: [ main, initial-mvp, initial-rds ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SSH_HOST: 172.16.6.49
+  SSH_USER: macar
+  REMOTE_DIR: /home/macar/apps/course-project-mob-barley
+
+jobs:
+  deploy:
+    name: Deploy via SSH and Docker Compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Create remote directory
+        run: |
+          ssh ${SSH_USER}@${SSH_HOST} "mkdir -p ${REMOTE_DIR}"
+
+      - name: Rsync repository to remote
+        run: |
+          rsync -az --delete --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'frontend/node_modules' \
+            --exclude 'backend/node_modules' \
+            --exclude '.github' \
+            ./ ${SSH_USER}@${SSH_HOST}:${REMOTE_DIR}/
+
+      - name: Build and start with Docker Compose
+        run: |
+          ssh ${SSH_USER}@${SSH_HOST} << 'EOF'
+            set -euo pipefail
+            cd ${REMOTE_DIR}
+            # Ensure docker and compose plugin exist; otherwise fail fast
+            docker --version
+            docker compose version
+
+            # Create an .env file from secrets if provided (optional)
+            if [ -n "${{ secrets.APP_ENV_FILE || '' }}" ]; then
+              echo "Writing .env from secret"
+              printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
+            fi
+
+            # Pull/build and restart services
+            docker compose -f docker-compose.yml down --remove-orphans || true
+            docker compose -f docker-compose.yml pull || true
+            docker compose -f docker-compose.yml up -d --build
+
+            # Optional cleanup of dangling images
+            docker image prune -f || true
+          EOF
+
+      - name: Post-deploy health check
+        if: always()
+        run: |
+          
+
