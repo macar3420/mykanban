@@ -36,13 +36,15 @@ jobs:
 
       - name: Build and start with Docker Compose
         working-directory: ${{ env.WORK_DIR }}
+        env:
+          APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
         run: |
           set -euo pipefail
           docker --version
           docker compose version
-          if [ -n "${{ secrets.APP_ENV_FILE || '' }}" ]; then
+          if [ -n "${APP_ENV_FILE:-}" ]; then
             echo "Writing .env from secret"
-            printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
+            printf '%s' "$APP_ENV_FILE" > .env
           fi
           docker compose down --remove-orphans || true
           docker compose pull || true
