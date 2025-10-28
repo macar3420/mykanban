@@ -1,4 +1,4 @@
-name: Deploy to VM
+name: Deploy to VM (Self-hosted)
 
 on:
   push:
@@ -10,82 +10,44 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SSH_HOST: 172.16.6.49
-  SSH_USER: macar
-  REMOTE_DIR: /home/macar/apps/course-project-mob-barley
+  WORK_DIR: /home/macar/apps/course-project-mob-barley
 
 jobs:
   deploy:
-    name: Deploy via SSH and Docker Compose
-    runs-on: ubuntu-latest
+    name: Deploy on self-hosted runner
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up SSH key (supports passphrase)
-        shell: bash
+      - name: Prepare work directory
         run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          # Write the private key from secrets to a file
-          printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          # If a passphrase is provided, remove it non-interactively into a new file
-          if [ -n "${{ secrets.SSH_PASSPHRASE || '' }}" ]; then
-            ssh-keygen -p -P "${{ secrets.SSH_PASSPHRASE }}" -N "" -f ~/.ssh/deploy_key -m PEM >/dev/null
-          fi
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/deploy_key
+          mkdir -p "$WORK_DIR"
 
-      - name: Add host to known_hosts (non-fatal)
-        shell: bash
-        run: |
-          set +e
-          mkdir -p ~/.ssh || true
-          touch ~/.ssh/known_hosts || true
-          chmod 700 ~/.ssh || true
-          chmod 600 ~/.ssh/known_hosts || true
-          ssh-keyscan -T 5 -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-
-      - name: Create remote directory
-        run: |
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_USER}@${SSH_HOST} "mkdir -p ${REMOTE_DIR}"
-
-      - name: Rsync repository to remote
+      - name: Sync repository into work directory
         run: |
           rsync -az --delete --exclude '.git' \
             --exclude 'node_modules' \
             --exclude 'frontend/node_modules' \
             --exclude 'backend/node_modules' \
             --exclude '.github' \
-            -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            ./ ${SSH_USER}@${SSH_HOST}:${REMOTE_DIR}/
+            ./ "$WORK_DIR"/
 
       - name: Build and start with Docker Compose
+        working-directory: ${{ env.WORK_DIR }}
         run: |
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${SSH_USER}@${SSH_HOST} << 'EOF'
-            set -euo pipefail
-            cd ${REMOTE_DIR}
-            # Ensure docker and compose plugin exist; otherwise fail fast
-            docker --version
-            docker compose version
-
-            # Create an .env file from secrets if provided (optional)
-            if [ -n "${{ secrets.APP_ENV_FILE || '' }}" ]; then
-              echo "Writing .env from secret"
-              printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
-            fi
-
-            # Pull/build and restart services
-            docker compose -f docker-compose.yml down --remove-orphans || true
-            docker compose -f docker-compose.yml pull || true
-            docker compose -f docker-compose.yml up -d --build
-
-            # Optional cleanup of dangling images
-            docker image prune -f || true
-          EOF
+          set -euo pipefail
+          docker --version
+          docker compose version
+          if [ -n "${{ secrets.APP_ENV_FILE || '' }}" ]; then
+            echo "Writing .env from secret"
+            printf '%s' "${{ secrets.APP_ENV_FILE }}" > .env
+          fi
+          docker compose down --remove-orphans || true
+          docker compose pull || true
+          docker compose up -d --build
+          docker image prune -f || true
 
       - name: Post-deploy health check
         if: always()
