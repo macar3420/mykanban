@@ -1,0 +1,13 @@
+# Database Backup Cron Job
+# This file shows the cron expression for automated database backups
+# To install, run: crontab -e and add the line below
+
+# Run database backup every 12 hours (at minute 0 of hours 0 and 12)
+# Format: minute hour day month weekday command
+0 */12 * * * /home/macar/Documents/course-project-mob-barley/backup-cron.sh >> /home/macar/Documents/course-project-mob-barley/backup-cron.log 2>&1
+
+# Alternative: Run at specific times (12:00 AM and 12:00 PM)
+# 0 0,12 * * * /home/macar/Documents/course-project-mob-barley/backup-cron.sh >> /home/macar/Documents/course-project-mob-barley/backup-cron.log 2>&1
+
+# Note: Update the path above to match your actual project directory
+

@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import api from "./api/index.js";
+import health from "./api/health.js";
 
 import * as middlewares from "./middlewares.js";
 
@@ -26,6 +27,9 @@ app.get("/", (_req, res) => {
     message: "🦄🌈✨👋🌎🌍🌏✨🌈🦄",
   });
 });
+
+// Health check endpoints (mounted at root level for standard access)
+app.use("/", health);
 
 app.use("/api/v1", api);
 
