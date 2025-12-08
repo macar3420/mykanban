@@ -1,8 +1,8 @@
 FROM node:22-alpine as build-stage
 WORKDIR /app
-COPY package*.json /app/
-RUN npm install
-COPY ./ /app/
+COPY package*.json ./
+RUN npm ci
+COPY . .
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build

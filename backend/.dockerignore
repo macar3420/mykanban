@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+coverage
+dist
+build
+tmp
+*.log
+test
+tests
+**/*.test.js
+**/*.spec.js
+

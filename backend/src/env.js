@@ -26,6 +26,14 @@ const envSchema = z.object({
   // Optional path to a PEM file inside the container/FS
   DB_SSL_CA_PATH: z.string().optional(),
   FRONTEND_BASE_URL: z.string().optional(),
+  // Email (Amazon SES)
+  SES_REGION: z.string().optional(),
+  SES_ACCESS_KEY_ID: z.string().optional(),
+  SES_SECRET_ACCESS_KEY: z.string().optional(),
+  SES_FROM_EMAIL: z.string().optional(),
+  // Email (SendGrid)
+  SENDGRID_API_KEY: z.string().optional(),
+  SENDGRID_FROM_EMAIL: z.string().optional(),
 });
 
 try {

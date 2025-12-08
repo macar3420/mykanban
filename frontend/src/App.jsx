@@ -23,7 +23,7 @@ function normalizeTask(t) {
 
 function Column({ title, columnKey, refs, state }) {
   const { todoRef, inprogressRef, doneRef, editInputRef } = refs;
-  const { columns, editing, menuOpen } = state;
+  const { columns, editing, menuOpen, dragging, dragOver } = state;
   const {
     handleAdd,
     startEdit,
@@ -33,9 +33,20 @@ function Column({ title, columnKey, refs, state }) {
     handleToggleDone,
     handleMoveTo,
     handleDelete,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDrop,
+    handleDragLeave,
   } = state.handlers;
   return (
-    <div className="column">
+    <div
+      className={`column ${dragOver === columnKey ? "is-drag-over" : ""}`}
+      onDragOver={(e) => handleDragOver(columnKey, e)}
+      onDragEnter={(e) => handleDragOver(columnKey, e)}
+      onDragLeave={() => handleDragLeave(columnKey)}
+      onDrop={(e) => handleDrop(columnKey, e)}
+    >
       <h3>{title}</h3>
       <div className="column-input-group">
         <input
@@ -70,11 +81,20 @@ function Column({ title, columnKey, refs, state }) {
             menuOpen.columnKey === columnKey &&
             menuOpen.id === item.id;
           const liClass =
-            `${isEditing ? "editing" : ""} ${item.done ? "done" : ""}`.trim();
+            `${isEditing ? "editing" : ""} ${item.done ? "done" : ""} ${
+              dragging &&
+              dragging.columnKey === columnKey &&
+              dragging.id === item.id
+                ? "dragging"
+                : ""
+            }`.trim();
           return (
             <li
               key={item.id}
               className={liClass}
+              draggable
+              onDragStart={() => handleDragStart(columnKey, item.id)}
+              onDragEnd={handleDragEnd}
               onDoubleClick={() => startEdit(columnKey, item.id)}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -200,6 +220,8 @@ function App() {
   const editInputRef = useRef(null);
   const [editing, setEditing] = useState(null); // { columnKey, id }
   const [menuOpen, setMenuOpen] = useState(null); // { columnKey, id }
+  const [dragging, setDragging] = useState(null); // { columnKey, id }
+  const [dragOver, setDragOver] = useState(null); // columnKey
 
   // Load current user; then load tasks only if authenticated
   useEffect(() => {
@@ -232,26 +254,32 @@ function App() {
 
   async function handleLogin(e) {
     e.preventDefault();
+    setAuthMessage("");
     const form = new FormData(e.currentTarget);
     const identifier = String(form.get("identifier") || "").trim();
     const password = String(form.get("password") || "").trim();
     if (!identifier || !password) return;
-    const me = await api("/api/v1/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ identifier, password }),
-    });
-    setUser(me);
-    // Reload tasks scoped to the user
     try {
-      const data = await api("/api/v1/tasks?group=status");
-      setColumns({
-        todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
-        inprogress: Array.isArray(data?.inprogress)
-          ? data.inprogress.map(normalizeTask)
-          : [],
-        done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+      const me = await api("/api/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ identifier, password }),
       });
-    } catch {}
+      setUser(me);
+      setAuthMessage("");
+      // Reload tasks scoped to the user
+      try {
+        const data = await api("/api/v1/tasks?group=status");
+        setColumns({
+          todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
+          inprogress: Array.isArray(data?.inprogress)
+            ? data.inprogress.map(normalizeTask)
+            : [],
+          done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+        });
+      } catch {}
+    } catch (_err) {
+      setAuthMessage("Invalid username or password");
+    }
   }
 
   async function handleSignup(e) {
@@ -297,7 +325,7 @@ function App() {
         body: JSON.stringify({ email }),
       });
       setAuthMessage(
-        "If the email exists, a reset link was sent. In dev, the token is logged in backend.",
+        "If the email exists, a reset link was sent. Check your inbox.",
       );
     } catch {
       setAuthMessage("Request received. Check your email if it exists.");
@@ -451,6 +479,36 @@ function App() {
     return obj;
   }
 
+  function handleDragStart(columnKey, id) {
+    setMenuOpen(null);
+    setDragging({ columnKey, id });
+  }
+
+  function handleDragEnd() {
+    setDragging(null);
+    setDragOver(null);
+  }
+
+  function handleDragOver(columnKey, event) {
+    event.preventDefault();
+    if (dragOver !== columnKey) {
+      setDragOver(columnKey);
+    }
+  }
+
+  async function handleDrop(columnKey, event) {
+    event.preventDefault();
+    setDragOver(null);
+    if (!dragging) return;
+    const { columnKey: from, id } = dragging;
+    await handleMoveTo(from, id, columnKey);
+    setDragging(null);
+  }
+
+  function handleDragLeave(columnKey) {
+    setDragOver((prev) => (prev === columnKey ? null : prev));
+  }
+
   // Gate: show login-only view until authenticated
   if (!user) {
     return (
@@ -529,9 +587,6 @@ function App() {
               required
             />
             <button type="submit">Send reset link</button>
-            <button type="button" onClick={() => setAuthMode("reset")}>
-              Have a token? Reset here
-            </button>
             <button type="button" onClick={() => setAuthMode("login")}>
               Back to sign in
             </button>
@@ -565,6 +620,7 @@ function App() {
               color: "#fff",
               opacity: 0.9,
               textAlign: "center",
+              fontSize: "1.05rem",
             }}
           >
             {authMessage}
@@ -604,6 +660,8 @@ function App() {
             columns,
             editing,
             menuOpen,
+            dragging,
+            dragOver,
             handlers: handlers({
               handleAdd,
               startEdit,
@@ -613,6 +671,11 @@ function App() {
               handleToggleDone,
               handleMoveTo,
               handleDelete,
+              handleDragStart,
+              handleDragEnd,
+              handleDragOver,
+              handleDrop,
+              handleDragLeave,
             }),
           }}
         />
@@ -624,6 +687,8 @@ function App() {
             columns,
             editing,
             menuOpen,
+            dragging,
+            dragOver,
             handlers: handlers({
               handleAdd,
               startEdit,
@@ -633,6 +698,11 @@ function App() {
               handleToggleDone,
               handleMoveTo,
               handleDelete,
+              handleDragStart,
+              handleDragEnd,
+              handleDragOver,
+              handleDrop,
+              handleDragLeave,
             }),
           }}
         />
@@ -644,6 +714,8 @@ function App() {
             columns,
             editing,
             menuOpen,
+            dragging,
+            dragOver,
             handlers: handlers({
               handleAdd,
               startEdit,
@@ -653,6 +725,11 @@ function App() {
               handleToggleDone,
               handleMoveTo,
               handleDelete,
+              handleDragStart,
+              handleDragEnd,
+              handleDragOver,
+              handleDrop,
+              handleDragLeave,
             }),
           }}
         />

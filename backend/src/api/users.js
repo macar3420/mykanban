@@ -3,6 +3,8 @@ import crypto from "crypto";
 import express from "express";
 import { getDbPool } from "../db.js";
 import { env } from "../env.js";
+import { sendResetEmail } from "../email.js";
+import { sendResetEmailSendGrid } from "../emailSendGrid.js";
 
 const router = express.Router();
 
@@ -118,12 +120,21 @@ router.post("/forgot", async (req, res) => {
           "INSERT INTO reset_tokens (user_id, token, expires_at) VALUES (?,?,?)",
           [user.id, token, expires],
         );
-        const frontendBase = env.FRONTEND_BASE_URL || "http://localhost:5174";
+        const frontendBase =
+          env.FRONTEND_BASE_URL || "http://localhost:5174";
         const resetUrl = `${frontendBase}/?token=${token}`;
-        // Log reset token for development
-        console.log(`[reset-link] token=${token} url=${resetUrl}`);
+        const sentSes = await sendResetEmail({ to: email.trim(), resetUrl });
+        const sentSg = sentSes
+          ? true
+          : await sendResetEmailSendGrid({ to: email.trim(), resetUrl });
+        if (!sentSes && !sentSg) {
+          // Fallback: still log for dev if email sending not configured
+          console.log(`[reset-link] token=${token} url=${resetUrl}`);
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.error("forgot failed", e);
+    }
   }
   res.status(204).end();
 });

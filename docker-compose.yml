@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
     env_file:
-      - .env
+      - backend/.env
     ports:
       - '3000:3000'
     restart: unless-stopped
