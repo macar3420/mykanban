@@ -14,7 +14,7 @@ async function getCurrentUser(req) {
   return row || null;
 }
 
-async function getAccessibleBoardIds(db, user) {
+async function getAccessibleBoardIds(db, user, teamId = null) {
   if (!user) {
     // Fallback: allow default board (legacy unauth usage)
     const [[b]] = await db.query(
@@ -22,6 +22,20 @@ async function getAccessibleBoardIds(db, user) {
     );
     return b ? [b.id] : [];
   }
+
+  // If teamId is specified, only return boards for that team
+  if (teamId !== null) {
+    const [rows] = await db.query(
+      `SELECT b.id
+       FROM boards b
+       INNER JOIN team_members tm ON tm.team_id = b.team_id AND tm.user_id = ?
+       WHERE b.team_id = ?`,
+      [user.id, teamId],
+    );
+    return rows.map((r) => r.id);
+  }
+
+  // Otherwise, return all accessible boards (personal + team boards)
   const [rows] = await db.query(
     `SELECT b.id
      FROM boards b
@@ -34,12 +48,28 @@ async function getAccessibleBoardIds(db, user) {
 
 const router = express.Router();
 
-// GET /api/v1/tasks?group=status
+// GET /api/v1/tasks?group=status&team_id=123&personal_only=true
 router.get("/", async (req, res, next) => {
   try {
     const db = getDbPool();
     const me = await getCurrentUser(req);
-    const boardIds = await getAccessibleBoardIds(db, me);
+    const teamId = req.query.team_id ? parseInt(req.query.team_id, 10) : null;
+    const personalOnly = req.query.personal_only === "true";
+
+    let boardIds;
+    if (personalOnly) {
+      // Only return personal boards (owned by user, not team boards)
+      const [rows] = await db.query(
+        `SELECT b.id
+         FROM boards b
+         WHERE b.owner_user_id = ? AND b.team_id IS NULL`,
+        [me.id],
+      );
+      boardIds = rows.map((r) => r.id);
+    } else {
+      boardIds = await getAccessibleBoardIds(db, me, teamId);
+    }
+
     if (boardIds.length === 0)
       return res.json({ todo: [], inprogress: [], done: [] });
     const [rows] = await db.query(
@@ -75,7 +105,22 @@ router.post("/", async (req, res, next) => {
       : "todo";
     const db = getDbPool();
     const me = await getCurrentUser(req);
-    const boardIds = await getAccessibleBoardIds(db, me);
+    const teamId = req.body.team_id ? parseInt(req.body.team_id, 10) : null;
+
+    let boardIds;
+    if (teamId !== null) {
+      // Team task - get team board
+      boardIds = await getAccessibleBoardIds(db, me, teamId);
+    } else {
+      // Personal task - only get personal boards
+      const [rows] = await db.query(
+        `SELECT b.id
+         FROM boards b
+         WHERE b.owner_user_id = ? AND b.team_id IS NULL`,
+        [me.id],
+      );
+      boardIds = rows.map((r) => r.id);
+    }
     const boardId = boardIds[0] || null;
 
     const [result] = await db.query(

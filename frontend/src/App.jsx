@@ -23,7 +23,7 @@ function normalizeTask(t) {
 
 function Column({ title, columnKey, refs, state }) {
   const { todoRef, inprogressRef, doneRef, editInputRef } = refs;
-  const { columns, editing, menuOpen, dragging, dragOver } = state;
+  const { columns, editing, menuOpen, dragging, dragOver, boardType, selectedTeam } = state;
   const {
     handleAdd,
     startEdit,
@@ -48,28 +48,30 @@ function Column({ title, columnKey, refs, state }) {
       onDrop={(e) => handleDrop(columnKey, e)}
     >
       <h3>{title}</h3>
-      <div className="column-input-group">
-        <input
-          type="text"
-          placeholder={"Type"}
-          ref={
-            columnKey === "todo"
-              ? todoRef
-              : columnKey === "inprogress"
-                ? inprogressRef
-                : doneRef
-          }
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAdd(columnKey);
+      {!(boardType === "team" && selectedTeam === null) && (
+        <div className="column-input-group">
+          <input
+            type="text"
+            placeholder={"Type"}
+            ref={
+              columnKey === "todo"
+                ? todoRef
+                : columnKey === "inprogress"
+                  ? inprogressRef
+                  : doneRef
             }
-          }}
-        />
-        <button type="button" onClick={() => handleAdd(columnKey)}>
-          Add
-        </button>
-      </div>
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAdd(columnKey);
+              }
+            }}
+          />
+          <button type="button" onClick={() => handleAdd(columnKey)}>
+            Add
+          </button>
+        </div>
+      )}
       <ul className="items">
         {columns[columnKey].map((item) => {
           const isEditing =
@@ -222,8 +224,61 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(null); // { columnKey, id }
   const [dragging, setDragging] = useState(null); // { columnKey, id }
   const [dragOver, setDragOver] = useState(null); // columnKey
+  const [boardType, setBoardType] = useState("personal"); // 'personal' | 'team'
+  const [teams, setTeams] = useState([]); // Array of team objects
+  const [selectedTeam, setSelectedTeam] = useState(null); // Selected team ID
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const [showAssignTeamModal, setShowAssignTeamModal] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState([]);
+  const [selectedTeamForAssign, setSelectedTeamForAssign] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [teamMenuOpen, setTeamMenuOpen] = useState(null); // team ID or null
+  const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(null); // team object
+  const [showManageMembersModal, setShowManageMembersModal] = useState(false);
+  const [managingTeam, setManagingTeam] = useState(null); // team object
+  const [teamMembers, setTeamMembers] = useState([]); // array of member objects
+  const [showDeleteTeamConfirm, setShowDeleteTeamConfirm] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState(null); // team object
+  const [showLeaveTeamConfirm, setShowLeaveTeamConfirm] = useState(false);
+  const [teamToLeave, setTeamToLeave] = useState(null); // team object
+  const [showRemoveMemberConfirm, setShowRemoveMemberConfirm] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null); // { team, member }
 
-  // Load current user; then load tasks only if authenticated
+  // Clear auth message when switching auth modes
+  useEffect(() => {
+    setAuthMessage("");
+  }, [authMode]);
+
+  // Close team menu when clicking outside
+  useEffect(() => {
+    if (teamMenuOpen === null) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.team-menu-wrap') && !e.target.closest('.team-menu')) {
+        setTeamMenuOpen(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [teamMenuOpen]);
+
+  // Close list item menu when clicking outside
+  useEffect(() => {
+    if (menuOpen === null) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.item-menu-wrap') && !e.target.closest('.item-menu')) {
+        setMenuOpen(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [menuOpen]);
+
+  // Load current user; then load tasks only if authenticated (personal board is default)
   useEffect(() => {
     (async () => {
       // If URL contains a reset token, open reset form and prefill
@@ -236,8 +291,12 @@ function App() {
       const me = await api("/api/v1/auth/me").catch(() => null);
       if (me) {
         setUser(me);
+        // Always start with personal board
+        setBoardType("personal");
+        setSelectedTeam(null);
+        // Load personal tasks on initial load (personal board is default)
         try {
-          const data = await api("/api/v1/tasks?group=status");
+          const data = await api("/api/v1/tasks?group=status&personal_only=true");
           setColumns({
             todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
             inprogress: Array.isArray(data?.inprogress)
@@ -247,6 +306,13 @@ function App() {
           });
         } catch (e) {
           console.error("Failed to load tasks", e);
+        }
+        // Load user's teams
+        try {
+          const teamsData = await api("/api/v1/teams");
+          setTeams(Array.isArray(teamsData) ? teamsData : []);
+        } catch (e) {
+          console.error("Failed to load teams", e);
         }
       }
     })();
@@ -266,9 +332,12 @@ function App() {
       });
       setUser(me);
       setAuthMessage("");
-      // Reload tasks scoped to the user
+      // Always start with personal board
+      setBoardType("personal");
+      setSelectedTeam(null);
+      // Reload tasks scoped to the user (personal board only)
       try {
-        const data = await api("/api/v1/tasks?group=status");
+        const data = await api("/api/v1/tasks?group=status&personal_only=true");
         setColumns({
           todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
           inprogress: Array.isArray(data?.inprogress)
@@ -277,6 +346,11 @@ function App() {
           done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
         });
       } catch {}
+      // Load user's teams
+      try {
+        const teamsData = await api("/api/v1/teams");
+        setTeams(Array.isArray(teamsData) ? teamsData : []);
+      } catch {}
     } catch (_err) {
       setAuthMessage("Invalid username or password");
     }
@@ -284,26 +358,61 @@ function App() {
 
   async function handleSignup(e) {
     e.preventDefault();
+    setAuthMessage("");
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") || "").trim();
     const password = String(form.get("password") || "").trim();
     const displayName = String(form.get("displayName") || "").trim();
     if (!email || !password || !displayName) return;
-    const me = await api("/api/v1/auth/signup", {
-      method: "POST",
-      body: JSON.stringify({ email, password, displayName }),
-    });
-    setUser(me);
     try {
-      const data = await api("/api/v1/tasks?group=status");
-      setColumns({
-        todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
-        inprogress: Array.isArray(data?.inprogress)
-          ? data.inprogress.map(normalizeTask)
-          : [],
-        done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+      const me = await api("/api/v1/auth/signup", {
+        method: "POST",
+        body: JSON.stringify({ email, password, displayName }),
       });
-    } catch {}
+      setUser(me);
+      setAuthMessage("");
+      // Always start with personal board
+      setBoardType("personal");
+      setSelectedTeam(null);
+      try {
+        const data = await api("/api/v1/tasks?group=status&personal_only=true");
+        setColumns({
+          todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
+          inprogress: Array.isArray(data?.inprogress)
+            ? data.inprogress.map(normalizeTask)
+            : [],
+          done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+        });
+      } catch {}
+      // Load user's teams
+      try {
+        const teamsData = await api("/api/v1/teams");
+        setTeams(Array.isArray(teamsData) ? teamsData : []);
+      } catch {}
+    } catch (err) {
+      // Handle signup errors - the api function throws Error with JSON string as message
+      try {
+        const errorText = err.message || "";
+        const errorData = JSON.parse(errorText);
+        if (errorData?.error === "email already in use") {
+          setAuthMessage("Email already in use");
+        } else if (errorData?.error === "duplicate username") {
+          setAuthMessage("Duplicate username");
+        } else {
+          setAuthMessage("Signup failed. Please try again.");
+        }
+      } catch {
+        // If error can't be parsed as JSON, check the error message string
+        const errorMsg = err.message || "";
+        if (errorMsg.includes("duplicate username") || errorMsg.includes("display_name")) {
+          setAuthMessage("Duplicate username");
+        } else if (errorMsg.includes("email already in use")) {
+          setAuthMessage("Email already in use");
+        } else {
+          setAuthMessage("Signup failed. Please try again.");
+        }
+      }
+    }
   }
 
   async function handleLogout() {
@@ -359,9 +468,13 @@ function App() {
     if (!text) return;
 
     try {
+      const body = { title: text, status: columnKey };
+      if (boardType === "team" && selectedTeam) {
+        body.team_id = selectedTeam;
+      }
       const created = await api("/api/v1/tasks", {
         method: "POST",
-        body: JSON.stringify({ title: text, status: columnKey }),
+        body: JSON.stringify(body),
       });
       const task = normalizeTask(created);
       setColumns((prev) => ({
@@ -548,10 +661,16 @@ function App() {
             />
             <button type="submit">Login</button>
             <div className="auth-links">
-              <button type="button" onClick={() => setAuthMode("signup")}>
+              <button type="button" onClick={() => {
+                setAuthMode("signup");
+                setAuthMessage("");
+              }}>
                 Create an account
               </button>
-              <button type="button" onClick={() => setAuthMode("forgot")}>
+              <button type="button" onClick={() => {
+                setAuthMode("forgot");
+                setAuthMessage("");
+              }}>
                 Forgot password?
               </button>
             </div>
@@ -573,7 +692,10 @@ function App() {
               required
             />
             <button type="submit">Create account</button>
-            <button type="button" onClick={() => setAuthMode("login")}>
+            <button type="button" onClick={() => {
+              setAuthMode("login");
+              setAuthMessage("");
+            }}>
               Already have an account? Log in
             </button>
           </form>
@@ -587,7 +709,10 @@ function App() {
               required
             />
             <button type="submit">Send reset link</button>
-            <button type="button" onClick={() => setAuthMode("login")}>
+            <button type="button" onClick={() => {
+              setAuthMode("login");
+              setAuthMessage("");
+            }}>
               Back to sign in
             </button>
           </form>
@@ -608,21 +733,16 @@ function App() {
               required
             />
             <button type="submit">Update password</button>
-            <button type="button" onClick={() => setAuthMode("login")}>
+            <button type="button" onClick={() => {
+              setAuthMode("login");
+              setAuthMessage("");
+            }}>
               Back to sign in
             </button>
           </form>
         )}
         {authMessage && (
-          <div
-            style={{
-              marginTop: "0.75rem",
-              color: "#fff",
-              opacity: 0.9,
-              textAlign: "center",
-              fontSize: "1.05rem",
-            }}
-          >
+          <div className="auth-message">
             {authMessage}
           </div>
         )}
@@ -651,7 +771,649 @@ function App() {
           Logout
         </button>
       </div>
-      <div className="board">
+      <div className="board-type-switch">
+        <button
+          className={`board-type-btn ${boardType === "personal" ? "active" : ""}`}
+          type="button"
+          onClick={() => {
+            setBoardType("personal");
+            // Load personal tasks when switching to personal board
+            if (user) {
+              api("/api/v1/tasks?group=status&personal_only=true")
+                .then((data) => {
+                  setColumns({
+                    todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
+                    inprogress: Array.isArray(data?.inprogress)
+                      ? data.inprogress.map(normalizeTask)
+                      : [],
+                    done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+                  });
+                })
+                .catch((e) => {
+                  console.error("Failed to load tasks", e);
+                });
+            }
+          }}
+        >
+          Personal
+        </button>
+        <button
+          className={`board-type-btn ${boardType === "team" ? "active" : ""}`}
+          type="button"
+          onClick={() => {
+            setBoardType("team");
+            setSelectedTeam(null);
+            // Clear columns when switching to team board
+            setColumns({
+              todo: [],
+              inprogress: [],
+              done: [],
+            });
+          }}
+        >
+          Team
+        </button>
+      </div>
+      {boardType === "team" && (
+        <div className="team-actions-center">
+          <button
+            className="team-action-btn"
+            type="button"
+            onClick={() => setShowCreateTeamModal(true)}
+          >
+            Create Team
+          </button>
+          <button
+            className="team-action-btn"
+            type="button"
+            onClick={() => setShowAssignTeamModal(true)}
+          >
+            Assign Team
+          </button>
+        </div>
+      )}
+      <div className="board-wrapper">
+        {boardType === "team" && (
+          <div className="team-actions-row">
+            <div className="team-buttons-column">
+              {teams.length > 0 && (
+                <div className="team-buttons" style={{ paddingLeft: '3rem', marginLeft: '-5rem' }}>
+                  {teams.map((team) => {
+                    const isOwner = team.created_by === user.id || team.role === 'owner';
+                    const isMenuOpen = teamMenuOpen === team.id;
+                    return (
+                      <div key={team.id} className="team-btn-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
+                        <button
+                          className={`team-btn ${selectedTeam === team.id ? "active" : ""}`}
+                          type="button"
+                          onClick={async () => {
+                            setSelectedTeam(team.id);
+                            try {
+                              const data = await api(`/api/v1/tasks?group=status&team_id=${team.id}`);
+                              setColumns({
+                                todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
+                                inprogress: Array.isArray(data?.inprogress)
+                                  ? data.inprogress.map(normalizeTask)
+                                  : [],
+                                done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+                              });
+                            } catch (e) {
+                              console.error("Failed to load team tasks", e);
+                            }
+                          }}
+                        >
+                          {team.name}
+                        </button>
+                        <div className="team-menu-wrap">
+                          <button
+                            className="team-menu-btn"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTeamMenuOpen(isMenuOpen ? null : team.id);
+                            }}
+                          >
+                            ⋯
+                          </button>
+                          {isMenuOpen && (
+                            <div className="team-menu" role="menu">
+                              {isOwner ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      setEditingTeam(team);
+                                      setShowEditTeamModal(true);
+                                      setTeamMenuOpen(null);
+                                    }}
+                                  >
+                                    Edit Team Name
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={async () => {
+                                      setManagingTeam(team);
+                                      setShowManageMembersModal(true);
+                                      setTeamMenuOpen(null);
+                                      // Load team members
+                                      try {
+                                        const members = await api(`/api/v1/teams/${team.id}/members`);
+                                        setTeamMembers(Array.isArray(members) ? members : []);
+                                      } catch (e) {
+                                        console.error("Failed to load team members", e);
+                                        setTeamMembers([]);
+                                      }
+                                    }}
+                                  >
+                                    Manage Members
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      setTeamMenuOpen(null);
+                                      setTeamToDelete(team);
+                                      setShowDeleteTeamConfirm(true);
+                                    }}
+                                  >
+                                    Delete Team
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setTeamMenuOpen(null);
+                                    setTeamToLeave(team);
+                                    setShowLeaveTeamConfirm(true);
+                                  }}
+                                >
+                                  Leave Team
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {showCreateTeamModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateTeamModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Create Team</h3>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = new FormData(e.currentTarget);
+                const name = String(form.get("name") || "").trim();
+                if (!name) return;
+                try {
+                  const newTeam = await api("/api/v1/teams", {
+                    method: "POST",
+                    body: JSON.stringify({ name }),
+                  });
+                  setTeams((prev) => [...prev, newTeam]);
+                  setSelectedTeam(newTeam.id);
+                  setShowCreateTeamModal(false);
+                  // Load team tasks
+                  const data = await api(`/api/v1/tasks?group=status&team_id=${newTeam.id}`);
+                  setColumns({
+                    todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
+                    inprogress: Array.isArray(data?.inprogress)
+                      ? data.inprogress.map(normalizeTask)
+                      : [],
+                    done: Array.isArray(data?.done) ? data.done.map(normalizeTask) : [],
+                  });
+                } catch (err) {
+                  console.error("Failed to create team", err);
+                  alert("Failed to create team. Please try again.");
+                }
+              }}
+            >
+              <input
+                name="name"
+                type="text"
+                placeholder="Team name"
+                required
+                autoFocus
+              />
+              <div className="modal-actions">
+                <button type="submit">Create</button>
+                <button type="button" onClick={() => setShowCreateTeamModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showAssignTeamModal && (
+        <div className="modal-overlay" onClick={() => setShowAssignTeamModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Assign Team</h3>
+            <div className="assign-team-form">
+              <label>Select Team:</label>
+              <select
+                value={selectedTeamForAssign || ""}
+                onChange={(e) => setSelectedTeamForAssign(parseInt(e.target.value, 10))}
+              >
+                <option value="">Choose a team...</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+              <label>Search for User:</label>
+              <input
+                type="text"
+                placeholder="Type to search users..."
+                value={userSearchTerm}
+                onChange={async (e) => {
+                  const term = e.target.value.trim();
+                  setUserSearchTerm(term);
+                  if (term.length >= 2) {
+                    try {
+                      const results = await api(`/api/v1/auth/users/search?q=${encodeURIComponent(term)}`);
+                      setUserSearchResults(Array.isArray(results) ? results : []);
+                    } catch (err) {
+                      console.error("Failed to search users", err);
+                      setUserSearchResults([]);
+                    }
+                  } else {
+                    setUserSearchResults([]);
+                  }
+                }}
+              />
+              {userSearchResults.length > 0 && (
+                <div className="user-search-results">
+                  {userSearchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      className="user-search-result-item"
+                      onClick={async () => {
+                        if (!selectedTeamForAssign) {
+                          setErrorMessage("Please select a team first");
+                          setShowErrorModal(true);
+                          return;
+                        }
+                        try {
+                          await api(`/api/v1/teams/${selectedTeamForAssign}/assign`, {
+                            method: "POST",
+                            body: JSON.stringify({ user_id: user.id }),
+                          });
+                          setShowAssignTeamModal(false);
+                          setUserSearchTerm("");
+                          setUserSearchResults([]);
+                          setSelectedTeamForAssign(null);
+                          setSuccessMessage(`Successfully assigned ${user.display_name} to team!`);
+                          setShowSuccessModal(true);
+                        } catch (err) {
+                          console.error("Failed to assign user", err);
+                          setErrorMessage("Failed to assign user. Please try again.");
+                          setShowErrorModal(true);
+                        }
+                      }}
+                    >
+                      <strong>{user.display_name}</strong>
+                      <span>{user.email}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="modal-actions">
+                <button type="button" onClick={() => setShowAssignTeamModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showSuccessModal && (
+        <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
+          <div className="modal-content success-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Success</h3>
+            <p>{successMessage}</p>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowSuccessModal(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showErrorModal && (
+        <div className="modal-overlay" onClick={() => setShowErrorModal(false)}>
+          <div className="modal-content error-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Error</h3>
+            <p>{errorMessage}</p>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowErrorModal(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showEditTeamModal && editingTeam && (
+        <div className="modal-overlay" onClick={() => setShowEditTeamModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Team Name</h3>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = new FormData(e.currentTarget);
+                const name = String(form.get("name") || "").trim();
+                if (!name) return;
+                try {
+                  const updated = await api(`/api/v1/teams/${editingTeam.id}`, {
+                    method: "PUT",
+                    body: JSON.stringify({ name }),
+                  });
+                  setTeams((prev) =>
+                    prev.map((t) => (t.id === editingTeam.id ? { ...t, name: updated.name } : t))
+                  );
+                  setShowEditTeamModal(false);
+                  setEditingTeam(null);
+                  setSuccessMessage("Team name updated successfully");
+                  setShowSuccessModal(true);
+                } catch (err) {
+                  setErrorMessage(err.message || "Failed to update team name");
+                  setShowErrorModal(true);
+                }
+              }}
+            >
+              <input
+                name="name"
+                type="text"
+                placeholder="Team name"
+                defaultValue={editingTeam.name}
+                required
+                autoFocus
+              />
+              <div className="modal-actions">
+                <button type="submit">Save</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditTeamModal(false);
+                    setEditingTeam(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showManageMembersModal && managingTeam && (
+        <div className="modal-overlay" onClick={() => setShowManageMembersModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Manage Members - {managingTeam.name}</h3>
+            <div style={{ marginBottom: "1rem" }}>
+              <h4 style={{ marginBottom: "0.5rem", fontSize: "1rem" }}>Add Member</h4>
+              <input
+                type="text"
+                placeholder="Search users by name or email..."
+                value={userSearchTerm}
+                onChange={async (e) => {
+                  const term = e.target.value.trim();
+                  setUserSearchTerm(term);
+                  if (term.length >= 2) {
+                    try {
+                      const results = await api(`/api/v1/auth/users/search?q=${encodeURIComponent(term)}`);
+                      setUserSearchResults(Array.isArray(results) ? results : []);
+                    } catch (err) {
+                      console.error("Search failed", err);
+                      setUserSearchResults([]);
+                    }
+                  } else {
+                    setUserSearchResults([]);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  fontSize: "1rem",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  borderRadius: "6px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  color: "#fff",
+                }}
+              />
+              {userSearchResults.length > 0 && (
+                <div className="user-search-results" style={{ marginTop: "0.5rem" }}>
+                  {userSearchResults.map((user) => (
+                    <div
+                      key={user.id}
+                      className="user-search-result-item"
+                      onClick={async () => {
+                        try {
+                          await api(`/api/v1/teams/${managingTeam.id}/assign`, {
+                            method: "POST",
+                            body: JSON.stringify({ user_id: user.id }),
+                          });
+                          // Reload members
+                          const members = await api(`/api/v1/teams/${managingTeam.id}/members`);
+                          setTeamMembers(Array.isArray(members) ? members : []);
+                          setUserSearchTerm("");
+                          setUserSearchResults([]);
+                          setSuccessMessage("Member added successfully");
+                          setShowSuccessModal(true);
+                        } catch (err) {
+                          setErrorMessage(err.message || "Failed to add member");
+                          setShowErrorModal(true);
+                        }
+                      }}
+                    >
+                      <strong>{user.display_name}</strong>
+                      <span>{user.email}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ marginBottom: "1rem" }}>
+              <h4 style={{ marginBottom: "0.5rem", fontSize: "1rem" }}>Current Members</h4>
+              {teamMembers.length === 0 ? (
+                <p style={{ opacity: 0.7 }}>No members yet</p>
+              ) : (
+                <div>
+                  {teamMembers.map((member) => (
+                    <div
+                      key={member.user_id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.5rem",
+                        marginBottom: "0.5rem",
+                        background: "rgba(255, 255, 255, 0.05)",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      <div>
+                        <strong>{member.display_name}</strong>
+                        <span style={{ marginLeft: "0.5rem", opacity: 0.7 }}>{member.email}</span>
+                        <span style={{ marginLeft: "0.5rem", fontSize: "0.9rem", opacity: 0.6 }}>
+                          ({member.role})
+                        </span>
+                      </div>
+                      {member.user_id !== user.id && member.role !== 'owner' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMemberToRemove({ team: managingTeam, member });
+                            setShowRemoveMemberConfirm(true);
+                          }}
+                          style={{
+                            padding: "0.25rem 0.5rem",
+                            fontSize: "0.9rem",
+                            background: "rgba(255, 0, 0, 0.2)",
+                            border: "1px solid rgba(255, 0, 0, 0.5)",
+                            color: "#ff6b6b",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button type="button" onClick={() => {
+                setShowManageMembersModal(false);
+                setManagingTeam(null);
+                setTeamMembers([]);
+                setUserSearchTerm("");
+                setUserSearchResults([]);
+              }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteTeamConfirm && teamToDelete && (
+        <div className="modal-overlay" onClick={() => setShowDeleteTeamConfirm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Team</h3>
+            <p>Are you sure you want to delete "{teamToDelete.name}"? This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api(`/api/v1/teams/${teamToDelete.id}`, { method: 'DELETE' });
+                    setTeams((prev) => prev.filter((t) => t.id !== teamToDelete.id));
+                    if (selectedTeam === teamToDelete.id) {
+                      setSelectedTeam(null);
+                      setColumns({ todo: [], inprogress: [], done: [] });
+                    }
+                    setShowDeleteTeamConfirm(false);
+                    setTeamToDelete(null);
+                    setSuccessMessage("Team deleted successfully");
+                    setShowSuccessModal(true);
+                  } catch (e) {
+                    setErrorMessage(e.message || "Failed to delete team");
+                    setShowErrorModal(true);
+                  }
+                }}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteTeamConfirm(false);
+                  setTeamToDelete(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showLeaveTeamConfirm && teamToLeave && (
+        <div className="modal-overlay" onClick={() => setShowLeaveTeamConfirm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Leave Team</h3>
+            <p>Are you sure you want to leave "{teamToLeave.name}"?</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api(`/api/v1/teams/${teamToLeave.id}/leave`, { method: 'POST' });
+                    setTeams((prev) => prev.filter((t) => t.id !== teamToLeave.id));
+                    if (selectedTeam === teamToLeave.id) {
+                      setSelectedTeam(null);
+                      setColumns({ todo: [], inprogress: [], done: [] });
+                    }
+                    setShowLeaveTeamConfirm(false);
+                    setTeamToLeave(null);
+                    setSuccessMessage("Left team successfully");
+                    setShowSuccessModal(true);
+                  } catch (e) {
+                    setErrorMessage(e.message || "Failed to leave team");
+                    setShowErrorModal(true);
+                  }
+                }}
+              >
+                Leave
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLeaveTeamConfirm(false);
+                  setTeamToLeave(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRemoveMemberConfirm && memberToRemove && (
+        <div className="modal-overlay" onClick={() => setShowRemoveMemberConfirm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Remove Member</h3>
+            <p>Are you sure you want to remove {memberToRemove.member.display_name} from the team?</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api(`/api/v1/teams/${memberToRemove.team.id}/members/${memberToRemove.member.user_id}`, {
+                      method: "DELETE",
+                    });
+                    // Reload members if manage members modal is open
+                    if (showManageMembersModal && managingTeam && managingTeam.id === memberToRemove.team.id) {
+                      const members = await api(`/api/v1/teams/${managingTeam.id}/members`);
+                      setTeamMembers(Array.isArray(members) ? members : []);
+                    }
+                    setShowRemoveMemberConfirm(false);
+                    setMemberToRemove(null);
+                    setSuccessMessage("Member removed successfully");
+                    setShowSuccessModal(true);
+                  } catch (err) {
+                    setErrorMessage(err.message || "Failed to remove member");
+                    setShowErrorModal(true);
+                  }
+                }}
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRemoveMemberConfirm(false);
+                  setMemberToRemove(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+        <div className="board">
         <Column
           title="To Do"
           columnKey="todo"
@@ -662,6 +1424,8 @@ function App() {
             menuOpen,
             dragging,
             dragOver,
+            boardType,
+            selectedTeam,
             handlers: handlers({
               handleAdd,
               startEdit,
@@ -689,6 +1453,8 @@ function App() {
             menuOpen,
             dragging,
             dragOver,
+            boardType,
+            selectedTeam,
             handlers: handlers({
               handleAdd,
               startEdit,
@@ -716,6 +1482,8 @@ function App() {
             menuOpen,
             dragging,
             dragOver,
+            boardType,
+            selectedTeam,
             handlers: handlers({
               handleAdd,
               startEdit,
@@ -733,6 +1501,7 @@ function App() {
             }),
           }}
         />
+        </div>
       </div>
     </div>
   );

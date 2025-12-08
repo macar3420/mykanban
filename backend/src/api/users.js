@@ -30,12 +30,19 @@ router.post("/signup", async (req, res, next) => {
         .json({ error: "email, password, displayName required" });
     }
     const db = getDbPool();
-    const [[existing]] = await db.query(
+    const [[existingEmail]] = await db.query(
       "SELECT id FROM users WHERE email = ?",
       [email],
     );
-    if (existing)
+    if (existingEmail)
       return res.status(409).json({ error: "email already in use" });
+
+    const [[existingUsername]] = await db.query(
+      "SELECT id FROM users WHERE display_name = ?",
+      [displayName],
+    );
+    if (existingUsername)
+      return res.status(409).json({ error: "duplicate username" });
 
     const hash = await bcrypt.hash(password, 10);
     const [result] = await db.query(
@@ -187,6 +194,37 @@ router.get("/me", async (req, res) => {
   );
   if (!row) return res.status(401).json({ error: "unauthorized" });
   res.json({ id: row.id, email: row.email, displayName: row.display_name });
+});
+
+// GET /api/v1/auth/users/search?q=searchterm - Search for users
+router.get("/users/search", async (req, res, next) => {
+  try {
+    const token = req.cookies?.[SESSION_COOKIE];
+    if (!token) return res.status(401).json({ error: "unauthorized" });
+    const db = getDbPool();
+    const [[currentUser]] = await db.query(
+      `SELECT u.id FROM sessions s JOIN users u ON u.id = s.user_id
+       WHERE s.token = ? AND s.expires_at > NOW()`,
+      [token],
+    );
+    if (!currentUser) return res.status(401).json({ error: "unauthorized" });
+
+    const searchTerm = String(req.query.q || "").trim();
+    if (!searchTerm || searchTerm.length < 2) {
+      return res.json([]);
+    }
+    const [users] = await db.query(
+      `SELECT id, display_name, email
+       FROM users
+       WHERE (display_name LIKE ? OR email LIKE ?)
+       AND id != ?
+       LIMIT 10`,
+      [`%${searchTerm}%`, `%${searchTerm}%`, currentUser.id],
+    );
+    res.json(users);
+  } catch (e) {
+    next(e);
+  }
 });
 
 export default router;
