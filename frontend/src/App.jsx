@@ -1182,13 +1182,14 @@ function App() {
                   }
                 }}
                 style={{
-                  width: "100%",
+                  width: "93%",
                   padding: "0.75rem",
                   fontSize: "1rem",
                   border: "1px solid rgba(255, 255, 255, 0.3)",
                   borderRadius: "6px",
                   background: "rgba(255, 255, 255, 0.1)",
                   color: "#fff",
+
                 }}
               />
               {userSearchResults.length > 0 && (

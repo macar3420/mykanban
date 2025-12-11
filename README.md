@@ -1,55 +1,32 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/UrSBfkqg)
-# Web Software Production
-Welcome to the starter repository for your team project in the **Web Software Production** course.
+# Web Software Production - Mob Barley Kanban Board
 
-As the course progress and you implement features, keep the README up-to-date.
+This is a web application that allows you to create a kanban board and manage your tasks.
 
-## Project: “TeamBoard” – A Collaborative Task Management Web App
-### 🎯 Project Goal
-Build a full-stack web application that allows users to create, manage, and collaborate on tasks within teams. The app should support basic CRUD operations, user authentication, and real-time updates.
+## Environment Setup
 
-### 🧩 Core Features (Required for All Teams)
-#### User Authentication
-- Register, login, logout
-- Join team
+### Backend Environment Variables (`backend/.env`)
 
-#### Task Management
-- Create, edit, delete tasks
-- Assign tasks to users
-- Set due dates and priorities
-- Team Collaboration
+Required:
+- `DB_HOST` - Database host (e.g., RDS endpoint or `127.0.0.1` for local)
+- `DB_PORT` - Database port (default: `3306`)
+- `DB_USER` - Database username
+- `DB_PASSWORD` - Database password
+- `DB_NAME` - Database name (default: `mob_barley`)
+- `DB_SSL` - Enable SSL for database connection (`true`/`false`, required for RDS)
 
-#### Create and join teams
-- View team-specific task boards
-
-### 🎨 Options (Choose 2–3 per team)
-Teams can personalize their app by selecting from the following enhancements:
-- AI Assistant: Suggest task priorities or deadlines using a simple ML model or rule-based logic.
-- Calendar View: Visualize tasks in a calendar or timeline format.
-- Notifications: Add email or in-app notifications for task updates.
-- Analytics Dashboard: Show team productivity metrics (e.g., tasks completed per week).
-- Multilingual Support: Add localization for at least two languages.
-- Security Focus: Implement advanced security features like 2FA or audit logs.
-- File Attachments: Allow users to upload files to tasks.
-- Custom Themes: Let users choose or create UI themes.
-- Responsive UI: Works well on desktop and mobile.
-  
-### 🛠️ Tech Stack Guidelines
-Frontend: React
-Backend: Node.js (Express)
-Database: PostgreSQL
-DevOps: Docker, GitHub Actions, CI/CD pipeline
-Testing: Unit + integration tests using Jest, Mocha, Cypress, Playwrite, etc.
+Optional:
+- `SENDGRID_API_KEY` - SendGrid API key for password reset emails
+- `SENDGRID_FROM_EMAIL` - Email address for password reset emails
 
 ## Local development
 
 - Backend
-  - From `backend/`: `npm run dev` (listens on http://localhost:3000)
+  - From `backend/`: `npm run dev` (http://localhost:3000)
 
 - Frontend
-  - From `frontend/`: `npm run dev` (Vite, usually http://localhost:5173)
+  - From `frontend/`: `npm run dev` (http://localhost:8080)
 
-## Docker (frontend + backend + MySQL)
+## Docker (frontend + backend)
 
 Build and start all services:
 
@@ -60,7 +37,6 @@ docker compose up -d --build
 Services:
 - API: http://localhost:3000
 - Frontend: http://localhost:8080
-- MySQL: localhost:3306 (root/devpass, db mob_barley)
 
 Stop:
 
@@ -68,4 +44,29 @@ Stop:
 docker compose down
 ```
 
-Data persists in Docker volume `mob_mysql_data`.
+**Note:** Database is hosted on AWS RDS (MySQL). Ensure `backend/.env` is configured with:
+- `DB_HOST` - RDS endpoint
+- `DB_USER` - Database username
+- `DB_PASSWORD` - Database password
+- `DB_NAME` - Database name (default: `mob_barley`)
+- `DB_SSL` - Set to `true` for RDS connections
+
+## How to use the app
+
+1. Go to http://localhost:8080
+2. Click "Create an account"
+3. Fill in the form in Signup.
+4. Click "Create account"
+5. You will be automatically logged in and redirected to the home page.
+6. There are 2 boards in the home page. One is your personal board and the other is your team board.
+7. You can create a new task in your personal board.
+8. You can CRUD tasks in your personal board, also drag-drop tasks between the columns.
+9. You can create a new team and add direclty other users to join.
+10. Typing the username of the user you want to add to the team will show you the user and you can add them to the team.
+11. The team you created and other teams you are a member of will be shown over the board.
+12. Clicking on a team will show you the tasks in that team.
+13. You can create a new task in the team board.
+14. You can CRUD tasks in the team board.
+15. As an owner of a team and a member of the team you can assign other users to the team by using the "Assign Team" button.
+16. As an owner of the team you can use the "Edit Team Name", "Delete Team" and "Manage Members" buttons. But if you are only a member of the team you can only see "Leave Team" button.
+17. You can logout by clicking the "Logout" button in the top right corner.
