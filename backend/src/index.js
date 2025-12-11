@@ -1,5 +1,8 @@
 import app from "./app.js";
+import { initDb } from "./db.js";
 import { env } from "./env.js";
+
+await initDb();
 
 const server = app.listen(env.PORT, () => {
   /* eslint-disable no-console */

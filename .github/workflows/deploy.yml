@@ -1,0 +1,58 @@
+name: Deploy to VM (Self-hosted)
+
+on:
+  push:
+    branches: [ main, initial-mvp, initial-rds ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WORK_DIR: /home/macar/apps/course-project-mob-barley
+
+jobs:
+  deploy:
+    name: Deploy on self-hosted runner
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare work directory
+        run: |
+          mkdir -p "$WORK_DIR"
+
+      - name: Sync repository into work directory
+        run: |
+          rsync -az --delete --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'frontend/node_modules' \
+            --exclude 'backend/node_modules' \
+            --exclude '.github' \
+            ./ "$WORK_DIR"/
+
+      - name: Build and start with Docker Compose
+        working-directory: ${{ env.WORK_DIR }}
+        env:
+          APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+        run: |
+          set -euo pipefail
+          docker --version
+          docker compose version
+          if [ -n "${APP_ENV_FILE:-}" ]; then
+            echo "Writing .env from secret"
+            printf '%s' "$APP_ENV_FILE" > .env
+          fi
+          docker compose down --remove-orphans || true
+          docker compose pull || true
+          docker compose up -d --build
+          docker image prune -f || true
+
+      - name: Post-deploy health check
+        if: always()
+        run: |
+
+

@@ -11,18 +11,22 @@
   },
   "keywords": [],
   "main": "src/index.js",
-
-"scripts": {
-  "start": "node src/index.js",
-  "dev": "node --watch --env-file=.env src/index.js",
-  "lint": "biome check --fix ./src",
-  "test": "vitest run"
-},
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch --env-file=.env src/index.js",
+    "lint": "biome check --fix ./src",
+    "test": "vitest run"
+  },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "@aws-sdk/client-sesv2": "^3.670.0",
+    "@sendgrid/mail": "^8.1.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "morgan": "^1.10.0",
+    "mysql2": "^3.15.1",
     "zod": "^3.25.67"
   },
   "devDependencies": {

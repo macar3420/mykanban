@@ -71,3 +71,7 @@ typings/
 
 # Serverless directories
 .serverless
+
+# Local security and incident artifacts
+security/
+incidents/

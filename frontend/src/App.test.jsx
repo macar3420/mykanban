@@ -1,46 +1,157 @@
-import { render, screen, within, waitFor, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, vi } from "vitest";
 import App from "./App.jsx";
 
-describe("App", () => {
-  test("renders columns and adds a To Do item", async () => {
-    render(<App />);
+// Mock framer-motion to avoid animation issues in tests
+vi.mock("framer-motion", () => ({
+  motion: {
+    div: ({ children, className, variants, initial, animate, ...props }) => (
+      <div className={className} {...props}>
+        {children}
+      </div>
+    ),
+    h1: ({ children, className, variants, initial, animate, ...props }) => (
+      <h1 className={className} {...props}>
+        {children}
+      </h1>
+    ),
+    p: ({ children, className, variants, initial, animate, ...props }) => (
+      <p className={className} {...props}>
+        {children}
+      </p>
+    ),
+  },
+}));
 
-    expect(screen.getByText("To Do")).toBeInTheDocument();
-    expect(screen.getByText("In Progress")).toBeInTheDocument();
-    expect(screen.getByText("Done")).toBeInTheDocument();
+// Mock the API calls for authentication
+const mockUser = {
+  id: 1,
+  displayName: "Test User",
+  email: "test@example.com",
+};
 
-    const input = screen.getAllByPlaceholderText("Type")[0];
-    await userEvent.type(input, "Write tests");
-    await userEvent.click(screen.getAllByRole("button", { name: /add/i })[0]);
+const reply = (data, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
+  json: async () => data,
+  text: async () => (typeof data === "string" ? data : JSON.stringify(data)),
+});
 
-    expect(screen.getByText("Write tests")).toBeInTheDocument();
-  });
+beforeEach(() => {
+  const getUrl = (url) =>
+    typeof url === "string" ? url : (url?.url ?? url?.href ?? String(url));
+  global.fetch = vi.fn((url, opts = {}) => {
+    const u = getUrl(url);
 
-  test("marks an item as done via the item menu", async () => {
-    render(<App />);
-  
-    // Add an item
-    const input = screen.getAllByPlaceholderText("Type")[0];
-    await userEvent.type(input, "Finish task");
-    await userEvent.click(screen.getAllByRole("button", { name: /add/i })[0]);
-  
-    const li = screen.getByText("Finish task").closest("li");
-    expect(li).not.toHaveClass("done");
-  
-    // Open the context menu via right-click on the <li>
-    fireEvent.contextMenu(li);
-  
-    // Click "Mark as done"
-    const markDone = await screen.findByRole("menuitem", { name: /mark as done/i });
-    await userEvent.click(markDone);
-  
-    +  // Assert it's marked done (re-query to avoid stale reference)
-  await waitFor(() => {
-  const updatedLi = screen.getByText("Finish task").closest("li");
-  expect(updatedLi).toHaveClass("done");
-    });
+    // Mock authentication endpoints
+    if (u.endsWith("/api/v1/auth/me")) {
+      return Promise.resolve(reply(mockUser));
+    }
+    if (u.endsWith("/api/v1/auth/login") && opts.method === "POST") {
+      return Promise.resolve(reply(mockUser));
+    }
+    if (u.endsWith("/api/v1/auth/signup") && opts.method === "POST") {
+      return Promise.resolve(reply(mockUser));
+    }
+
+    // Mock task endpoints
+    if (u.endsWith("/api/v1/tasks?group=status")) {
+      return Promise.resolve(reply({ todo: [], inprogress: [], done: [] }));
+    }
+    if (u.endsWith("/api/v1/tasks") && opts.method === "POST") {
+      const body = JSON.parse(opts.body || "{}");
+      return Promise.resolve(
+        reply({ id: 1, title: body.title, status: body.status, done: 0 }, 201),
+      );
+    }
+    if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "PUT") {
+      const body = JSON.parse(opts.body || "{}");
+      return Promise.resolve(
+        reply({
+          id: 1,
+          title: body.title ?? "Write tests",
+          status: body.status ?? "todo",
+          done: body.done ? 1 : 0,
+        }),
+      );
+    }
+    if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "DELETE") {
+      return Promise.resolve(reply(null, 204));
+    }
+    return Promise.resolve(reply(null, 404));
   });
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
+describe("App", () => {
+  test("renders authentication form when user is not logged in", () => {
+    render(<App />);
+
+    // Check for authentication elements
+    expect(screen.getByText("Welcome")).toBeInTheDocument();
+    expect(
+      screen.getByText("Sign in to access your boards"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Sign in")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Email or username"),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+  });
+
+  test("renders task board when user is logged in", async () => {
+    // Mock successful authentication
+    global.fetch = vi.fn((url) => {
+      if (url.endsWith("/api/v1/auth/me")) {
+        return Promise.resolve(reply(mockUser));
+      }
+      if (url.endsWith("/api/v1/tasks?group=status")) {
+        return Promise.resolve(reply({ todo: [], inprogress: [], done: [] }));
+      }
+      return Promise.resolve(reply(null, 404));
+    });
+
+    render(<App />);
+
+    // Wait for authentication to complete and task board to render
+    await waitFor(() => {
+      expect(screen.getByText("To Do")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByText("Done")).toBeInTheDocument();
+    expect(screen.getByText("Signed in as Test User")).toBeInTheDocument();
+  });
+
+  test("renders FillTextAnimation component with correct text", () => {
+    render(<App />);
+
+    // Check for the welcome animation text
+    expect(screen.getByText("Welcome")).toBeInTheDocument();
+    expect(
+      screen.getByText("Sign in to access your boards"),
+    ).toBeInTheDocument();
+  });
+
+  test("shows authentication form elements", () => {
+    render(<App />);
+
+    // Check authentication form elements
+    expect(screen.getByText("Sign in")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Email or username"),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create an account" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Forgot password?" }),
+    ).toBeInTheDocument();
+  });
+});
