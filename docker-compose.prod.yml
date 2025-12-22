@@ -34,6 +34,8 @@ services:
       - FRONTEND_BASE_URL=${FRONTEND_BASE_URL}
       - SESSION_SECRET=${SESSION_SECRET}
       - JWT_SECRET=${JWT_SECRET}
+    ports:
+      - '3001:3000'  # Expose on 3001 to avoid conflict with other services
     depends_on:
       mysql:
         condition: service_healthy
@@ -51,6 +53,8 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=${FRONTEND_BASE_URL}/api
+    ports:
+      - '8083:80'  # Expose on 8083 to avoid conflict with other services
     restart: unless-stopped
     networks:
       - app-network

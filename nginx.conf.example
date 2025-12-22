@@ -1,5 +1,7 @@
 # Nginx Configuration for kanban.mnacar.com
 # Copy this to /etc/nginx/conf.d/kanban.conf on your Fedora server
+# Using port 80 - nginx can handle multiple sites on port 80 using different server_name values
+# Access your site at: http://kanban.mnacar.com
 
 server {
     listen 80;
@@ -7,7 +9,7 @@ server {
 
     # Frontend
     location / {
-        proxy_pass http://localhost:8081;
+        proxy_pass http://localhost:8083;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -20,7 +22,7 @@ server {
 
     # Backend API
     location /api {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

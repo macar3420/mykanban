@@ -4,14 +4,17 @@
 - **Domain**: kanban.mnacar.com
 - **Server**: macar@ec2-16-171-181-79.eu-north-1.compute.amazonaws.com
 - **OS**: Fedora Linux
-- **Frontend Port**: 8081 (internal, proxied by Nginx)
-- **Backend Port**: 3000 (internal, proxied by Nginx)
+- **Nginx Port**: 80 (external, shared with other sites via server_name)
+- **Frontend Container Port**: 8083 (host) → 80 (container)
+- **Backend Container Port**: 3001 (host) → 3000 (container)
+- **Access URL**: http://kanban.mnacar.com
 
 ## Prerequisites
 
 1. EC2 instance running Fedora Linux
 2. Domain `kanban.mnacar.com` pointing to EC2 public IP in Route53
 3. Security group allowing ports: 22 (SSH), 80 (HTTP), 443 (HTTPS)
+4. **Note**: Port 80 is shared with other sites (nginx handles multiple sites via server_name)
 4. SSH key file: `mustafa-server.pem` (ensure it has correct permissions: `chmod 400 mustafa-server.pem`)
 
 ## Quick SSH Reference
@@ -35,6 +38,9 @@ git pull origin main
 ## Step 1: Install Dependencies on Server
 
 ```bash
+# Install Git (needed to clone repository)
+sudo dnf install -y git
+
 # Install Docker and Docker Compose
 sudo dnf install -y docker docker-compose
 sudo systemctl enable --now docker
@@ -50,6 +56,11 @@ sudo systemctl enable --now nginx
 # Install Certbot for SSL
 sudo dnf install -y certbot python3-certbot-nginx
 ```
+
+**Next**: Set up Git authentication. See `GIT_SETUP.md` for detailed instructions on:
+- Installing Git (already done above)
+- Setting up SSH keys OR Personal Access Token
+- Configuring Git credentials
 
 ## Step 2: Push Changes to Git (if not already done)
 
@@ -68,27 +79,34 @@ git commit -m "Add production deployment configuration"
 git push origin main
 ```
 
-## Step 3: Clone Repository on Server
+## Step 3: Set Up Git Authentication
 
-SSH into your server and clone the repository:
+**IMPORTANT**: Before cloning, you need to authenticate with GitHub. See `GIT_SETUP.md` for complete instructions.
 
+**Quick options:**
+
+**Option A - SSH (Recommended):**
 ```bash
-# SSH into the server
-ssh -i mustafa-server.pem macar@ec2-16-171-181-79.eu-north-1.compute.amazonaws.com
+# Generate SSH key
+ssh-keygen -t ed25519 -C "your.email@example.com"
+cat ~/.ssh/id_ed25519.pub  # Copy this and add to GitHub Settings → SSH keys
 
-# Install git if not already installed
-sudo dnf install -y git
+# Test connection
+ssh -T git@github.com
 
-# Clone the repository
+# Clone repository
 git clone git@github.com:5G00DM04-3007/course-project-mob-barley.git
 cd course-project-mob-barley
 ```
 
-**Alternative**: If you don't have SSH keys set up on the server, use HTTPS:
+**Option B - HTTPS (Easier):**
 ```bash
+# Clone repository (will prompt for GitHub username and Personal Access Token)
 git clone https://github.com/5G00DM04-3007/course-project-mob-barley.git
 cd course-project-mob-barley
 ```
+
+**See `GIT_SETUP.md` for detailed step-by-step instructions.**
 
 ## Step 4: Set Up Environment Variables
 
@@ -111,23 +129,32 @@ nano backend/.env
 - Generate random strings for SESSION_SECRET and JWT_SECRET (use: `openssl rand -base64 32`)
 - Set `FRONTEND_BASE_URL=https://kanban.mnacar.com`
 
-## Step 5: Configure Nginx
+## Step 6: Configure Nginx
 
 ```bash
-# Copy nginx config
+# Copy nginx config example to create kanban.conf
 sudo cp nginx.conf.example /etc/nginx/conf.d/kanban.conf
 
-# Edit if needed
-sudo nano /etc/nginx/conf.d/kanban.conf
+# Verify the config (optional - view it)
+sudo cat /etc/nginx/conf.d/kanban.conf
 
-# Test configuration
+# Test nginx configuration syntax
 sudo nginx -t
 
-# Reload Nginx
+# If test passes, reload nginx
 sudo systemctl reload nginx
+
+# If nginx is not running, start it
+sudo systemctl start nginx
+sudo systemctl enable nginx
 ```
 
-## Step 6: Start Docker Services
+**Note**:
+- Config uses port **80** (nginx handles multiple sites on port 80 via different `server_name` values)
+- Access your site at: `http://kanban.mnacar.com` (no port needed)
+- Make sure port 80 is open in your EC2 security group
+
+## Step 7: Start Docker Services
 
 ```bash
 cd ~/course-project-mob-barley
@@ -142,7 +169,7 @@ docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs -f
 ```
 
-## Step 7: Set Up SSL Certificate
+## Step 8: Set Up SSL Certificate
 
 After DNS is properly configured and pointing to your server:
 
@@ -152,11 +179,16 @@ sudo certbot --nginx -d kanban.mnacar.com -d www.kanban.mnacar.com
 
 Follow the prompts. Certbot will automatically update your Nginx config to use HTTPS.
 
-## Step 8: Verify Deployment
+## Step 9: Verify Deployment
 
-1. Visit `https://kanban.mnacar.com` in your browser
-2. Check backend health: `curl https://kanban.mnacar.com/api/v1/health`
+1. Visit `http://kanban.mnacar.com` in your browser
+2. Check backend health: `curl http://kanban.mnacar.com/api/v1/health`
 3. View logs: `docker compose -f docker-compose.prod.yml logs -f`
+
+**Note**:
+- Site is accessible at `http://kanban.mnacar.com` (port 80, no port number needed)
+- Make sure port 80 is open in your EC2 security group
+- For SSL/HTTPS later, use Certbot: `sudo certbot --nginx -d kanban.mnacar.com`
 
 ## Useful Commands
 
