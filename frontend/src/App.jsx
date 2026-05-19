@@ -297,9 +297,7 @@ function App() {
         setSelectedTeam(null);
         // Load personal tasks on initial load (personal board is default)
         try {
-          const data = await api(
-            "/v1/tasks?group=status&personal_only=true",
-          );
+          const data = await api("/v1/tasks?group=status&personal_only=true");
           setColumns({
             todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
             inprogress: Array.isArray(data?.inprogress)
@@ -1252,13 +1250,10 @@ function App() {
                   const name = String(form.get("name") || "").trim();
                   if (!name) return;
                   try {
-                    const updated = await api(
-                      `/v1/teams/${editingTeam.id}`,
-                      {
-                        method: "PUT",
-                        body: JSON.stringify({ name }),
-                      },
-                    );
+                    const updated = await api(`/v1/teams/${editingTeam.id}`, {
+                      method: "PUT",
+                      body: JSON.stringify({ name }),
+                    });
                     setTeams((prev) =>
                       prev.map((t) =>
                         t.id === editingTeam.id
@@ -1357,13 +1352,10 @@ function App() {
                         className="user-search-result-item"
                         onClick={async () => {
                           try {
-                            await api(
-                              `/v1/teams/${managingTeam.id}/assign`,
-                              {
-                                method: "POST",
-                                body: JSON.stringify({ user_id: user.id }),
-                              },
-                            );
+                            await api(`/v1/teams/${managingTeam.id}/assign`, {
+                              method: "POST",
+                              body: JSON.stringify({ user_id: user.id }),
+                            });
                             // Reload members
                             const members = await api(
                               `/v1/teams/${managingTeam.id}/members`,
