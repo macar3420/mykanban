@@ -31,7 +31,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME:-mob_barley}
       - DB_SSL=false
-      - FRONTEND_BASE_URL=${FRONTEND_BASE_URL}
       - SESSION_SECRET=${SESSION_SECRET}
       - JWT_SECRET=${JWT_SECRET}
     ports:
@@ -52,7 +51,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=${FRONTEND_BASE_URL}/api
+        - VITE_API_URL=/api
     ports:
       - '8083:80'  # Expose on 8083 to avoid conflict with other services
     restart: unless-stopped
