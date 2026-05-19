@@ -127,7 +127,7 @@ describe("App", () => {
     expect(screen.getByText("Signed in as Test User")).toBeInTheDocument();
   });
 
-  test("renders FillTextAnimation component with correct text", () => {
+  test("renders auth welcome header on login page", () => {
     render(<App />);
 
     // Check for the welcome animation text

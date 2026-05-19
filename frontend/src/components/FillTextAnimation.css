@@ -22,11 +22,13 @@
 
 /* Fill text animation styles */
 .fill-text {
-  font-family:
-    "Rudiment", "Pencilpete", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans, "Nunito Sans", sans-serif);
   font-size: 3.5rem;
   font-weight: 700;
   margin: 0 0 20px 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
   background: linear-gradient(
     90deg,
     var(--fill-color, #ffffff) 0%,
@@ -43,8 +45,7 @@
 }
 
 .fill-subtitle {
-  font-family:
-    "Rudiment", "Pencilpete", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans, "Nunito Sans", sans-serif);
   font-size: 1.4rem;
   color: rgba(255, 255, 255, 0.9);
   margin: 0;

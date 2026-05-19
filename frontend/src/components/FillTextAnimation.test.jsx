@@ -89,13 +89,13 @@ describe("FillTextAnimation", () => {
     expect(animationContainer).toHaveStyle("--background-color: #000000");
   });
 
-  it("renders with Rudiment font family", () => {
+  it("renders with Nunito Sans font family", () => {
     const { container } = render(<FillTextAnimation />);
 
     const textElement = container.querySelector(".fill-text");
-    expect(textElement).toHaveStyle(
-      'font-family: "Rudiment", "Pencilpete", system-ui, Avenir, Helvetica, Arial, sans-serif',
-    );
+    expect(textElement).toHaveStyle({
+      fontFamily: 'var(--font-sans, "Nunito Sans", sans-serif)',
+    });
   });
 
   it("handles special characters correctly", () => {

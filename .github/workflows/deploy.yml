@@ -1,31 +1,38 @@
-name: Deploy to VM (Self-hosted)
+# Deploy to your server (requires a self-hosted GitHub Actions runner on the VM)
+name: Deploy
 
 on:
-  push:
-    branches: [ main, initial-mvp, initial-rds ]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: deploy-mykanban
   cancel-in-progress: true
 
 env:
-  WORK_DIR: /home/macar/apps/course-project-mob-barley
+  WORK_DIR: /home/macar/apps/mykanban
 
 jobs:
   deploy:
-    name: Deploy on self-hosted runner
+    name: Deploy on server
     runs-on: self-hosted
-
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Prepare work directory
-        run: |
-          mkdir -p "$WORK_DIR"
+        run: mkdir -p "$WORK_DIR"
 
-      - name: Sync repository into work directory
+      - name: Sync repository
         run: |
           rsync -az --delete --exclude '.git' \
             --exclude 'node_modules' \
@@ -40,19 +47,14 @@ jobs:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
         run: |
           set -euo pipefail
-          docker --version
-          docker compose version
           if [ -n "${APP_ENV_FILE:-}" ]; then
-            echo "Writing .env from secret"
             printf '%s' "$APP_ENV_FILE" > .env
           fi
-          docker compose down --remove-orphans || true
-          docker compose pull || true
-          docker compose up -d --build
+          docker compose -f docker-compose.prod.yml down --remove-orphans || true
+          docker compose -f docker-compose.prod.yml up -d --build
           docker image prune -f || true
 
-      - name: Post-deploy health check
-        if: always()
+      - name: Health check
         run: |
-
-
+          sleep 5
+          curl -fsS http://localhost:3001/health

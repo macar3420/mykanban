@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import FillTextAnimation from "./components/FillTextAnimation.jsx";
-
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 async function api(path, options = {}) {
@@ -33,19 +31,12 @@ function Column({ title, columnKey, refs, state }) {
     handleToggleDone,
     handleMoveTo,
     handleDelete,
-    handleDragStart,
-    handleDragEnd,
-    handleDragOver,
-    handleDrop,
-    handleDragLeave,
+    handleItemPointerDown,
   } = state.handlers;
   return (
     <div
       className={`column ${dragOver === columnKey ? "is-drag-over" : ""}`}
-      onDragOver={(e) => handleDragOver(columnKey, e)}
-      onDragEnter={(e) => handleDragOver(columnKey, e)}
-      onDragLeave={() => handleDragLeave(columnKey)}
-      onDrop={(e) => handleDrop(columnKey, e)}
+      data-column-key={columnKey}
     >
       <h3>{title}</h3>
       {!(boardType === "team" && selectedTeam === null) && (
@@ -94,9 +85,7 @@ function Column({ title, columnKey, refs, state }) {
             <li
               key={item.id}
               className={liClass}
-              draggable
-              onDragStart={() => handleDragStart(columnKey, item.id)}
-              onDragEnd={handleDragEnd}
+              onPointerDown={(e) => handleItemPointerDown(columnKey, item.id, e)}
               onDoubleClick={() => startEdit(columnKey, item.id)}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -592,58 +581,97 @@ function App() {
     return obj;
   }
 
-  function handleDragStart(columnKey, id) {
+  function handleItemPointerDown(columnKey, id, event) {
+    if (event.target.closest("button, input")) return;
+    if (typeof event.button === "number" && event.button !== 0) return;
+    const item = columns[columnKey].find((i) => i.id === id);
+    if (!item) return;
+    const li = event.currentTarget;
+    const rect = li.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
     setMenuOpen(null);
-    setDragging({ columnKey, id });
+    setDragging({
+      columnKey,
+      id,
+      title: item.title,
+      done: item.done,
+      offsetX,
+      offsetY,
+      width: rect.width,
+      x: rect.left,
+      y: rect.top,
+    });
   }
 
-  function handleDragEnd() {
-    setDragging(null);
-    setDragOver(null);
-  }
+  const handleMoveToRef = useRef(handleMoveTo);
+  handleMoveToRef.current = handleMoveTo;
 
-  function handleDragOver(columnKey, event) {
-    event.preventDefault();
-    if (dragOver !== columnKey) {
-      setDragOver(columnKey);
-    }
-  }
-
-  async function handleDrop(columnKey, event) {
-    event.preventDefault();
-    setDragOver(null);
+  useEffect(() => {
     if (!dragging) return;
-    const { columnKey: from, id } = dragging;
-    await handleMoveTo(from, id, columnKey);
-    setDragging(null);
-  }
 
-  function handleDragLeave(columnKey) {
-    setDragOver((prev) => (prev === columnKey ? null : prev));
-  }
+    const onPointerMove = (event) => {
+      setDragging((prev) =>
+        prev
+          ? {
+              ...prev,
+              x: event.clientX - prev.offsetX,
+              y: event.clientY - prev.offsetY,
+            }
+          : null,
+      );
+      const el = document.elementFromPoint(event.clientX, event.clientY);
+      const col = el?.closest("[data-column-key]");
+      const key = col?.getAttribute("data-column-key");
+      setDragOver((prev) => (prev === key ? prev : key || null));
+    };
+
+    const finishDrag = async (event) => {
+      const el = document.elementFromPoint(event.clientX, event.clientY);
+      const col = el?.closest("[data-column-key]");
+      const toKey = col?.getAttribute("data-column-key");
+      const from = dragging;
+      setDragging(null);
+      setDragOver(null);
+      if (
+        from &&
+        toKey &&
+        ["todo", "inprogress", "done"].includes(toKey)
+      ) {
+        await handleMoveToRef.current(from.columnKey, from.id, toKey);
+      }
+    };
+
+    const onPointerUp = (event) => {
+      finishDrag(event);
+    };
+
+    const onPointerCancel = () => {
+      setDragging(null);
+      setDragOver(null);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerCancel);
+    document.body.classList.add("is-dragging-task");
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerCancel);
+      document.body.classList.remove("is-dragging-task");
+    };
+  }, [dragging]);
 
   // Gate: show login-only view until authenticated
   if (!user) {
     return (
-      <div
-        className="page"
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <FillTextAnimation
-          text="Welcome"
-          fillColor="#ffffff"
-          backgroundColor="transparent"
-          subtitle="Sign in to access your boards"
-          animationDuration={2.5}
-          delay={0.1}
-          containerClassName="compact"
-        />
+      <div className="page auth-page">
+        <header className="auth-header">
+          <h1 className="auth-title">Welcome</h1>
+          <p className="auth-subtitle">Sign in to access your boards</p>
+        </header>
         {authMode === "login" ? (
           <form className="auth-form" onSubmit={handleLogin}>
             <h3>Sign in</h3>
@@ -752,15 +780,23 @@ function App() {
 
   return (
     <div className="page">
-      <FillTextAnimation
-        text={`Hey, ${user.displayName}!`}
-        fillColor="#ffffff"
-        backgroundColor="transparent"
-        subtitle="Organize your tasks with style"
-        animationDuration={3}
-        delay={0.2}
-        containerClassName="compact"
-      />
+      {dragging && (
+        <div
+          className={`drag-ghost${dragging.done ? " done" : ""}`}
+          style={{
+            left: dragging.x,
+            top: dragging.y,
+            width: dragging.width,
+          }}
+          aria-hidden="true"
+        >
+          <span className="drag-ghost-text">{dragging.title}</span>
+        </div>
+      )}
+      <header className="board-header">
+        <h1 className="board-title">Hey, {user.displayName}!</h1>
+        <p className="board-subtitle">Organize your tasks with style</p>
+      </header>
       <div className="user-header">
         <span className="user-info">Signed in as {user.displayName}</span>
         <button
@@ -1436,11 +1472,7 @@ function App() {
               handleToggleDone,
               handleMoveTo,
               handleDelete,
-              handleDragStart,
-              handleDragEnd,
-              handleDragOver,
-              handleDrop,
-              handleDragLeave,
+              handleItemPointerDown,
             }),
           }}
         />
@@ -1465,11 +1497,7 @@ function App() {
               handleToggleDone,
               handleMoveTo,
               handleDelete,
-              handleDragStart,
-              handleDragEnd,
-              handleDragOver,
-              handleDrop,
-              handleDragLeave,
+              handleItemPointerDown,
             }),
           }}
         />
@@ -1494,11 +1522,7 @@ function App() {
               handleToggleDone,
               handleMoveTo,
               handleDelete,
-              handleDragStart,
-              handleDragEnd,
-              handleDragOver,
-              handleDrop,
-              handleDragLeave,
+              handleItemPointerDown,
             }),
           }}
         />
