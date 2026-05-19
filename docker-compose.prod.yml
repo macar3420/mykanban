@@ -51,7 +51,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=/api
+        - VITE_API_URL=/api #VITE_API_URL=http://localhost:3001/api for local
     ports:
       - '8083:80'  # Expose on 8083 to avoid conflict with other services
     restart: unless-stopped

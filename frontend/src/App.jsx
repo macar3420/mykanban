@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 async function api(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
@@ -289,7 +289,7 @@ function App() {
         setResetToken(t);
         setAuthMessage("");
       }
-      const me = await api("/api/v1/auth/me").catch(() => null);
+      const me = await api("/v1/auth/me").catch(() => null);
       if (me) {
         setUser(me);
         // Always start with personal board
@@ -298,7 +298,7 @@ function App() {
         // Load personal tasks on initial load (personal board is default)
         try {
           const data = await api(
-            "/api/v1/tasks?group=status&personal_only=true",
+            "/v1/tasks?group=status&personal_only=true",
           );
           setColumns({
             todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
@@ -312,7 +312,7 @@ function App() {
         }
         // Load user's teams
         try {
-          const teamsData = await api("/api/v1/teams");
+          const teamsData = await api("/v1/teams");
           setTeams(Array.isArray(teamsData) ? teamsData : []);
         } catch (e) {
           console.error("Failed to load teams", e);
@@ -329,7 +329,7 @@ function App() {
     const password = String(form.get("password") || "").trim();
     if (!identifier || !password) return;
     try {
-      const me = await api("/api/v1/auth/login", {
+      const me = await api("/v1/auth/login", {
         method: "POST",
         body: JSON.stringify({ identifier, password }),
       });
@@ -340,7 +340,7 @@ function App() {
       setSelectedTeam(null);
       // Reload tasks scoped to the user (personal board only)
       try {
-        const data = await api("/api/v1/tasks?group=status&personal_only=true");
+        const data = await api("/v1/tasks?group=status&personal_only=true");
         setColumns({
           todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
           inprogress: Array.isArray(data?.inprogress)
@@ -351,7 +351,7 @@ function App() {
       } catch {}
       // Load user's teams
       try {
-        const teamsData = await api("/api/v1/teams");
+        const teamsData = await api("/v1/teams");
         setTeams(Array.isArray(teamsData) ? teamsData : []);
       } catch {}
     } catch (_err) {
@@ -368,7 +368,7 @@ function App() {
     const displayName = String(form.get("displayName") || "").trim();
     if (!email || !password || !displayName) return;
     try {
-      const me = await api("/api/v1/auth/signup", {
+      const me = await api("/v1/auth/signup", {
         method: "POST",
         body: JSON.stringify({ email, password, displayName }),
       });
@@ -378,7 +378,7 @@ function App() {
       setBoardType("personal");
       setSelectedTeam(null);
       try {
-        const data = await api("/api/v1/tasks?group=status&personal_only=true");
+        const data = await api("/v1/tasks?group=status&personal_only=true");
         setColumns({
           todo: Array.isArray(data?.todo) ? data.todo.map(normalizeTask) : [],
           inprogress: Array.isArray(data?.inprogress)
@@ -389,7 +389,7 @@ function App() {
       } catch {}
       // Load user's teams
       try {
-        const teamsData = await api("/api/v1/teams");
+        const teamsData = await api("/v1/teams");
         setTeams(Array.isArray(teamsData) ? teamsData : []);
       } catch {}
     } catch (err) {
@@ -422,7 +422,7 @@ function App() {
   }
 
   async function handleLogout() {
-    await api("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
+    await api("/v1/auth/logout", { method: "POST" }).catch(() => {});
     setUser(null);
     // Clear tasks until login
     setColumns({ todo: [], inprogress: [], done: [] });
@@ -435,7 +435,7 @@ function App() {
     const email = String(form.get("email") || "").trim();
     if (!email) return;
     try {
-      await api("/api/v1/auth/forgot", {
+      await api("/v1/auth/forgot", {
         method: "POST",
         body: JSON.stringify({ email }),
       });
@@ -455,7 +455,7 @@ function App() {
     const newPassword = String(form.get("newPassword") || "").trim();
     if (!token || !newPassword) return;
     try {
-      await api("/api/v1/auth/reset", {
+      await api("/v1/auth/reset", {
         method: "POST",
         body: JSON.stringify({ token, newPassword }),
       });
@@ -478,7 +478,7 @@ function App() {
       if (boardType === "team" && selectedTeam) {
         body.team_id = selectedTeam;
       }
-      const created = await api("/api/v1/tasks", {
+      const created = await api("/v1/tasks", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -495,7 +495,7 @@ function App() {
 
   async function handleDelete(columnKey, id) {
     try {
-      await api(`/api/v1/tasks/${id}`, { method: "DELETE" });
+      await api(`/v1/tasks/${id}`, { method: "DELETE" });
       setColumns((prev) => ({
         ...prev,
         [columnKey]: prev[columnKey].filter((item) => item.id !== id),
@@ -518,7 +518,7 @@ function App() {
     if (!text) return;
 
     try {
-      const updated = await api(`/api/v1/tasks/${id}`, {
+      const updated = await api(`/v1/tasks/${id}`, {
         method: "PUT",
         body: JSON.stringify({ title: text }),
       });
@@ -549,7 +549,7 @@ function App() {
   async function handleToggleDone(columnKey, id) {
     try {
       const current = columns[columnKey].find((i) => i.id === id);
-      const updated = await api(`/api/v1/tasks/${id}`, {
+      const updated = await api(`/v1/tasks/${id}`, {
         method: "PUT",
         body: JSON.stringify({ done: !current.done }),
       });
@@ -574,7 +574,7 @@ function App() {
       return;
     }
     try {
-      const updated = await api(`/api/v1/tasks/${id}`, {
+      const updated = await api(`/v1/tasks/${id}`, {
         method: "PUT",
         body: JSON.stringify({
           status: columnKeyTo,
@@ -839,7 +839,7 @@ function App() {
             setBoardType("personal");
             // Load personal tasks when switching to personal board
             if (user) {
-              api("/api/v1/tasks?group=status&personal_only=true")
+              api("/v1/tasks?group=status&personal_only=true")
                 .then((data) => {
                   setColumns({
                     todo: Array.isArray(data?.todo)
@@ -925,7 +925,7 @@ function App() {
                             setSelectedTeam(team.id);
                             try {
                               const data = await api(
-                                `/api/v1/tasks?group=status&team_id=${team.id}`,
+                                `/v1/tasks?group=status&team_id=${team.id}`,
                               );
                               setColumns({
                                 todo: Array.isArray(data?.todo)
@@ -981,7 +981,7 @@ function App() {
                                       // Load team members
                                       try {
                                         const members = await api(
-                                          `/api/v1/teams/${team.id}/members`,
+                                          `/v1/teams/${team.id}/members`,
                                         );
                                         setTeamMembers(
                                           Array.isArray(members) ? members : [],
@@ -1047,7 +1047,7 @@ function App() {
                   const name = String(form.get("name") || "").trim();
                   if (!name) return;
                   try {
-                    const newTeam = await api("/api/v1/teams", {
+                    const newTeam = await api("/v1/teams", {
                       method: "POST",
                       body: JSON.stringify({ name }),
                     });
@@ -1056,7 +1056,7 @@ function App() {
                     setShowCreateTeamModal(false);
                     // Load team tasks
                     const data = await api(
-                      `/api/v1/tasks?group=status&team_id=${newTeam.id}`,
+                      `/v1/tasks?group=status&team_id=${newTeam.id}`,
                     );
                     setColumns({
                       todo: Array.isArray(data?.todo)
@@ -1128,7 +1128,7 @@ function App() {
                     if (term.length >= 2) {
                       try {
                         const results = await api(
-                          `/api/v1/auth/users/search?q=${encodeURIComponent(term)}`,
+                          `/v1/auth/users/search?q=${encodeURIComponent(term)}`,
                         );
                         setUserSearchResults(
                           Array.isArray(results) ? results : [],
@@ -1156,7 +1156,7 @@ function App() {
                           }
                           try {
                             await api(
-                              `/api/v1/teams/${selectedTeamForAssign}/assign`,
+                              `/v1/teams/${selectedTeamForAssign}/assign`,
                               {
                                 method: "POST",
                                 body: JSON.stringify({ user_id: user.id }),
@@ -1253,7 +1253,7 @@ function App() {
                   if (!name) return;
                   try {
                     const updated = await api(
-                      `/api/v1/teams/${editingTeam.id}`,
+                      `/v1/teams/${editingTeam.id}`,
                       {
                         method: "PUT",
                         body: JSON.stringify({ name }),
@@ -1323,7 +1323,7 @@ function App() {
                     if (term.length >= 2) {
                       try {
                         const results = await api(
-                          `/api/v1/auth/users/search?q=${encodeURIComponent(term)}`,
+                          `/v1/auth/users/search?q=${encodeURIComponent(term)}`,
                         );
                         setUserSearchResults(
                           Array.isArray(results) ? results : [],
@@ -1358,7 +1358,7 @@ function App() {
                         onClick={async () => {
                           try {
                             await api(
-                              `/api/v1/teams/${managingTeam.id}/assign`,
+                              `/v1/teams/${managingTeam.id}/assign`,
                               {
                                 method: "POST",
                                 body: JSON.stringify({ user_id: user.id }),
@@ -1366,7 +1366,7 @@ function App() {
                             );
                             // Reload members
                             const members = await api(
-                              `/api/v1/teams/${managingTeam.id}/members`,
+                              `/v1/teams/${managingTeam.id}/members`,
                             );
                             setTeamMembers(
                               Array.isArray(members) ? members : [],
@@ -1488,7 +1488,7 @@ function App() {
                   type="button"
                   onClick={async () => {
                     try {
-                      await api(`/api/v1/teams/${teamToDelete.id}`, {
+                      await api(`/v1/teams/${teamToDelete.id}`, {
                         method: "DELETE",
                       });
                       setTeams((prev) =>
@@ -1536,7 +1536,7 @@ function App() {
                   type="button"
                   onClick={async () => {
                     try {
-                      await api(`/api/v1/teams/${teamToLeave.id}/leave`, {
+                      await api(`/v1/teams/${teamToLeave.id}/leave`, {
                         method: "POST",
                       });
                       setTeams((prev) =>
@@ -1588,7 +1588,7 @@ function App() {
                   onClick={async () => {
                     try {
                       await api(
-                        `/api/v1/teams/${memberToRemove.team.id}/members/${memberToRemove.member.user_id}`,
+                        `/v1/teams/${memberToRemove.team.id}/members/${memberToRemove.member.user_id}`,
                         {
                           method: "DELETE",
                         },
@@ -1600,7 +1600,7 @@ function App() {
                         managingTeam.id === memberToRemove.team.id
                       ) {
                         const members = await api(
-                          `/api/v1/teams/${managingTeam.id}/members`,
+                          `/v1/teams/${managingTeam.id}/members`,
                         );
                         setTeamMembers(Array.isArray(members) ? members : []);
                       }
