@@ -135,6 +135,40 @@ button:focus-visible {
 }
 
 .board-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.board-title {
+  font-size: 3.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0 0 0.25rem;
+  color: #fff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.02em;
+}
+
+.board-subtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.board-header {
   text-align: center;
   margin-top: 2.5rem;
   margin-bottom: 1rem;
@@ -163,6 +197,18 @@ button:focus-visible {
   color: rgba(255, 255, 255, 0.92);
   margin: 0;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.top-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 900px;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 .board-wrapper {
@@ -564,11 +610,12 @@ body.is-dragging-task .column.is-drag-over {
 
 /* Base sizing for header info */
 .user-header {
-  margin-bottom: 1rem;
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 .user-info {
