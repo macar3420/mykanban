@@ -26,10 +26,16 @@ jobs:
        github.event.workflow_run.head_branch == 'main')
 
     steps:
+      # Native git avoids downloading actions/checkout (often times out on slow EC2)
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+        env:
+          REPO_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin https://github.com/macar3420/mykanban.git
+          git fetch --depth 1 origin "$REPO_SHA"
+          git checkout FETCH_HEAD
 
       - name: Prepare work directory
         run: mkdir -p "$WORK_DIR"
