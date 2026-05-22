@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  WORK_DIR: /home/macar/apps/mykanban
+  WORK_DIR: /home/macar/mykanban
   COMPOSE_FILE: docker-compose.prod.yml
 
 jobs:
