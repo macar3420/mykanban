@@ -23,6 +23,7 @@ vi.mock("framer-motion", () => ({
   },
 }));
 
+// Mock the API calls for authentication
 const mockUser = {
   id: 1,
   displayName: "Test User",
@@ -42,28 +43,28 @@ beforeEach(() => {
   global.fetch = vi.fn((url, opts = {}) => {
     const u = getUrl(url);
 
-    if (u.includes("/v1/auth/me")) {
+    // Mock authentication endpoints
+    if (u.endsWith("/api/v1/auth/me")) {
       return Promise.resolve(reply(mockUser));
     }
-    if (u.includes("/v1/auth/login") && opts.method === "POST") {
+    if (u.endsWith("/api/v1/auth/login") && opts.method === "POST") {
       return Promise.resolve(reply(mockUser));
     }
-    if (u.includes("/v1/auth/signup") && opts.method === "POST") {
+    if (u.endsWith("/api/v1/auth/signup") && opts.method === "POST") {
       return Promise.resolve(reply(mockUser));
     }
-    if (u.includes("/v1/teams") && (!opts.method || opts.method === "GET")) {
-      return Promise.resolve(reply([]));
-    }
-    if (u.includes("/v1/tasks?group=status")) {
+
+    // Mock task endpoints
+    if (u.endsWith("/api/v1/tasks?group=status")) {
       return Promise.resolve(reply({ todo: [], inprogress: [], done: [] }));
     }
-    if (u.includes("/v1/tasks") && opts.method === "POST") {
+    if (u.endsWith("/api/v1/tasks") && opts.method === "POST") {
       const body = JSON.parse(opts.body || "{}");
       return Promise.resolve(
         reply({ id: 1, title: body.title, status: body.status, done: 0 }, 201),
       );
     }
-    if (/\/v1\/tasks\/\d+$/.test(u) && opts.method === "PUT") {
+    if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "PUT") {
       const body = JSON.parse(opts.body || "{}");
       return Promise.resolve(
         reply({
@@ -74,7 +75,7 @@ beforeEach(() => {
         }),
       );
     }
-    if (/\/v1\/tasks\/\d+$/.test(u) && opts.method === "DELETE") {
+    if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "DELETE") {
       return Promise.resolve(reply(null, 204));
     }
     return Promise.resolve(reply(null, 404));
@@ -83,15 +84,13 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
-  localStorage.clear();
 });
 
 describe("App", () => {
   test("renders authentication form when user is not logged in", () => {
-    global.fetch = vi.fn(() => Promise.resolve(reply(null, 401)));
-
     render(<App />);
 
+    // Check for authentication elements
     expect(screen.getByText("Welcome")).toBeInTheDocument();
     expect(
       screen.getByText("Sign in to access your boards"),
@@ -105,21 +104,20 @@ describe("App", () => {
   });
 
   test("renders task board when user is logged in", async () => {
+    // Mock successful authentication
     global.fetch = vi.fn((url) => {
-      if (url.includes("/v1/auth/me")) {
+      if (url.endsWith("/api/v1/auth/me")) {
         return Promise.resolve(reply(mockUser));
       }
-      if (url.includes("/v1/tasks?group=status")) {
+      if (url.endsWith("/api/v1/tasks?group=status")) {
         return Promise.resolve(reply({ todo: [], inprogress: [], done: [] }));
-      }
-      if (url.includes("/v1/teams")) {
-        return Promise.resolve(reply([]));
       }
       return Promise.resolve(reply(null, 404));
     });
 
     render(<App />);
 
+    // Wait for authentication to complete and task board to render
     await waitFor(() => {
       expect(screen.getByText("To Do")).toBeInTheDocument();
     });
@@ -130,10 +128,9 @@ describe("App", () => {
   });
 
   test("renders auth welcome header on login page", () => {
-    global.fetch = vi.fn(() => Promise.resolve(reply(null, 401)));
-
     render(<App />);
 
+    // Check for the welcome animation text
     expect(screen.getByText("Welcome")).toBeInTheDocument();
     expect(
       screen.getByText("Sign in to access your boards"),
@@ -141,10 +138,9 @@ describe("App", () => {
   });
 
   test("shows authentication form elements", () => {
-    global.fetch = vi.fn(() => Promise.resolve(reply(null, 401)));
-
     render(<App />);
 
+    // Check authentication form elements
     expect(screen.getByText("Sign in")).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("Email or username"),

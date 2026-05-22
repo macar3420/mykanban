@@ -27,15 +27,15 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
-      - name: Run Frontend Tests
-        working-directory: ./frontend
-        run: npm run test:run
-
       - name: Run Frontend Build
         working-directory: ./frontend
         env:
           VITE_API_URL: http://localhost:3000
         run: npm run build
+
+      - name: Run Frontend Tests
+        working-directory: ./frontend
+        run: npm run test:run
 
       - name: Install Backend Dependencies
         working-directory: ./backend
