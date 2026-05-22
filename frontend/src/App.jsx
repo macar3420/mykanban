@@ -815,22 +815,20 @@ function App() {
           <span className="drag-ghost-text">{dragging.title}</span>
         </div>
       )}
-      <div className="top-bar">
-  <header className="board-header">
-    <h1 className="board-title">Hey, {user.displayName}!</h1>
-    <p className="board-subtitle">Organize your tasks with style</p>
-  </header>
-  <div className="user-header">
-    <span className="user-info">Signed in as {user.displayName}</span>
-    <button
-      className="user-logout-btn"
-      type="button"
-      onClick={handleLogout}
-    >
-      Logout
-    </button>
-  </div>
-</div>
+      <header className="board-header">
+        <h1 className="board-title">Hey, {user.displayName}!</h1>
+        <p className="board-subtitle">Organize your tasks with style</p>
+      </header>
+      <div className="user-header">
+        <span className="user-info">Signed in as {user.displayName}</span>
+        <button
+          className="user-logout-btn"
+          type="button"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
       <div className="board-type-switch">
         <button
           className={`board-type-btn ${boardType === "personal" ? "active" : ""}`}
