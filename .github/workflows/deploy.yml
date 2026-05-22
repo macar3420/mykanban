@@ -14,11 +14,15 @@ concurrency:
 
 env:
   WORK_DIR: /home/macar/apps/mykanban
+  COMPOSE_FILE: docker-compose.prod.yml
 
 jobs:
   deploy:
     name: Deploy on server
     runs-on: self-hosted
+    permissions:
+      contents: read
+      packages: read
 
     if: >
       github.event_name == 'workflow_dispatch' ||
@@ -49,10 +53,12 @@ jobs:
             --exclude '.github' \
             ./ "$WORK_DIR"/
 
-      - name: Build and start with Docker Compose
+      - name: Pull images and start with Docker Compose
         working-directory: ${{ env.WORK_DIR }}
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -61,9 +67,17 @@ jobs:
             printf '%s' "$APP_ENV_FILE" > .env
           fi
 
-          # IMPORTANT: use docker-compose (not docker compose)
-          docker-compose -f docker-compose.prod.yml down --remove-orphans || true
-          docker-compose -f docker-compose.prod.yml up -d --build
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+          export IMAGE_TAG
+
+          COMPOSE="docker-compose -f ${COMPOSE_FILE}"
+          test -f "${COMPOSE_FILE}"
+
+          # Production stack only (mysql + backend:3001 + frontend:8083)
+          $COMPOSE down --remove-orphans || true
+          $COMPOSE pull
+          $COMPOSE up -d
 
           docker image prune -f || true
 

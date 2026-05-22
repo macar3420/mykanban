@@ -20,8 +20,7 @@ services:
       - app-network
 
   backend:
-    build:
-      context: ./backend
+    image: ghcr.io/macar3420/mykanban-backend:${IMAGE_TAG:-latest}
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -48,10 +47,7 @@ services:
       retries: 3
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        - VITE_API_URL=/api #VITE_API_URL=http://localhost:3001/api for local
+    image: ghcr.io/macar3420/mykanban-frontend:${IMAGE_TAG:-latest}
     ports:
       - '8083:80'  # Expose on 8083 to avoid conflict with other services
     restart: unless-stopped
