@@ -51,10 +51,7 @@ beforeEach(() => {
     if (u.includes("/v1/auth/signup") && opts.method === "POST") {
       return Promise.resolve(reply(mockUser));
     }
-    if (
-      u.includes("/v1/teams") &&
-      (!opts.method || opts.method === "GET")
-    ) {
+    if (u.includes("/v1/teams") && (!opts.method || opts.method === "GET")) {
       return Promise.resolve(reply([]));
     }
     if (u.includes("/v1/tasks?group=status")) {
