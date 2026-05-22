@@ -70,21 +70,48 @@ jobs:
         run: |
           set -euo pipefail
 
+          # EC2 → ghcr.io can be slow; allow longer pulls and retry transient timeouts
+          export DOCKER_CLIENT_TIMEOUT=300
+          export COMPOSE_HTTP_TIMEOUT=300
+
+          retry() {
+            local max="$1"
+            shift
+            local n=1
+            until "$@"; do
+              if [ "$n" -ge "$max" ]; then
+                echo "Failed after ${max} attempts: $*"
+                return 1
+              fi
+              echo "Attempt ${n} failed, retrying in 25s..."
+              sleep 25
+              n=$((n + 1))
+            done
+          }
+
           # write env file from GitHub secret (if exists)
           if [ -n "${APP_ENV_FILE:-}" ]; then
             printf '%s' "$APP_ENV_FILE" > .env
           fi
-
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
           export IMAGE_TAG
 
           COMPOSE="docker-compose -f ${COMPOSE_FILE}"
           test -f "${COMPOSE_FILE}"
 
+          login_ghcr() {
+            if [ -f "${HOME}/.docker/config.json" ] && grep -q '"ghcr.io"' "${HOME}/.docker/config.json"; then
+              echo "Using existing ghcr.io credentials on runner"
+              return 0
+            fi
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          }
+
+          retry 5 login_ghcr
+
           # Production stack only (mysql + backend:3001 + frontend:8083)
           $COMPOSE down --remove-orphans || true
-          $COMPOSE pull
+          retry 5 $COMPOSE pull
           $COMPOSE up -d
 
           docker image prune -f || true
