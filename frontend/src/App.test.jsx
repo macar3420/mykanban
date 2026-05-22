@@ -44,27 +44,32 @@ beforeEach(() => {
     const u = getUrl(url);
 
     // Mock authentication endpoints
-    if (u.endsWith("/api/v1/auth/me")) {
+    if (u.includes("/api/v1/auth/me")) {
       return Promise.resolve(reply(mockUser));
     }
-    if (u.endsWith("/api/v1/auth/login") && opts.method === "POST") {
+    if (u.includes("/api/v1/auth/login") && opts.method === "POST") {
       return Promise.resolve(reply(mockUser));
     }
-    if (u.endsWith("/api/v1/auth/signup") && opts.method === "POST") {
+    if (u.includes("/api/v1/auth/signup") && opts.method === "POST") {
       return Promise.resolve(reply(mockUser));
     }
 
+    // Mock teams endpoint
+    if (u.includes("/api/v1/teams") && (!opts.method || opts.method === "GET")) {
+      return Promise.resolve(reply([]));
+    }
+
     // Mock task endpoints
-    if (u.endsWith("/api/v1/tasks?group=status")) {
+    if (u.includes("/api/v1/tasks?group=status")) {
       return Promise.resolve(reply({ todo: [], inprogress: [], done: [] }));
     }
-    if (u.endsWith("/api/v1/tasks") && opts.method === "POST") {
+    if (u.includes("/api/v1/tasks") && opts.method === "POST") {
       const body = JSON.parse(opts.body || "{}");
       return Promise.resolve(
         reply({ id: 1, title: body.title, status: body.status, done: 0 }, 201),
       );
     }
-    if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "PUT") {
+    if (/\/v1\/tasks\/\d+$/.test(u) && opts.method === "PUT") {
       const body = JSON.parse(opts.body || "{}");
       return Promise.resolve(
         reply({
@@ -75,7 +80,7 @@ beforeEach(() => {
         }),
       );
     }
-    if (/\/api\/v1\/tasks\/\d+$/.test(u) && opts.method === "DELETE") {
+    if (/\/v1\/tasks\/\d+$/.test(u) && opts.method === "DELETE") {
       return Promise.resolve(reply(null, 204));
     }
     return Promise.resolve(reply(null, 404));
@@ -104,13 +109,15 @@ describe("App", () => {
   });
 
   test("renders task board when user is logged in", async () => {
-    // Mock successful authentication
     global.fetch = vi.fn((url) => {
-      if (url.endsWith("/api/v1/auth/me")) {
+      if (url.includes("/api/v1/auth/me")) {
         return Promise.resolve(reply(mockUser));
       }
-      if (url.endsWith("/api/v1/tasks?group=status")) {
+      if (url.includes("/api/v1/tasks?group=status")) {
         return Promise.resolve(reply({ todo: [], inprogress: [], done: [] }));
+      }
+      if (url.includes("/api/v1/teams")) {
+        return Promise.resolve(reply([]));
       }
       return Promise.resolve(reply(null, 404));
     });
