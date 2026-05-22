@@ -55,7 +55,10 @@ beforeEach(() => {
     }
 
     // Mock teams endpoint
-    if (u.includes("/api/v1/teams") && (!opts.method || opts.method === "GET")) {
+    if (
+      u.includes("/api/v1/teams") &&
+      (!opts.method || opts.method === "GET")
+    ) {
       return Promise.resolve(reply([]));
     }
 
