@@ -36,10 +36,18 @@ jobs:
           REPO_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           set -euo pipefail
+          REPO_URL="https://github.com/macar3420/mykanban.git"
+
           git init .
-          git remote add origin https://github.com/macar3420/mykanban.git
+          if git remote | grep -qx origin; then
+            git remote set-url origin "$REPO_URL"
+          else
+            git remote add origin "$REPO_URL"
+          fi
+
           git fetch --depth 1 origin "$REPO_SHA"
-          git checkout FETCH_HEAD
+          git checkout -f FETCH_HEAD
+          git clean -fdx
 
       - name: Prepare work directory
         run: mkdir -p "$WORK_DIR"
