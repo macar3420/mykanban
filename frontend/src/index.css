@@ -1,5 +1,8 @@
 :root {
   --font-sans: "Nunito Sans", system-ui, -apple-system, sans-serif;
+  /* Board UI: list items, inputs, "Signed in as…" */
+  --text-board-ui: 1rem;
+  --text-column-title: 1.15rem;
   --page-bg-color: #2a2626;
   --page-bg-image:
     linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
@@ -299,7 +302,7 @@ button:focus-visible {
 
 .column h3 {
   margin: 0 0 0.75rem 0;
-  font-size: 1.5rem;
+  font-size: var(--text-column-title);
   text-align: center;
   letter-spacing: 0.02em;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
@@ -317,7 +320,7 @@ button:focus-visible {
   padding: 0;
   margin-bottom: 1.25rem;
   font-family: var(--font-sans);
-  font-size: 1.1rem;
+  font-size: var(--text-board-ui);
   font-weight: 500;
   display: flex;
   align-items: flex-start;
@@ -390,7 +393,7 @@ body.is-dragging-task .column.is-drag-over {
   gap: 0.5rem;
   padding: 0.6rem 0.85rem;
   font-family: var(--font-sans);
-  font-size: 1.1rem;
+  font-size: var(--text-board-ui);
   font-weight: 500;
   color: #fff;
   background: rgba(32, 32, 36, 0.96);
@@ -539,6 +542,7 @@ body.is-dragging-task .column.is-drag-over {
 .column input {
   flex: 1;
   min-width: 0;
+  font-size: var(--text-board-ui);
 }
 
 .items li + li {
@@ -560,7 +564,7 @@ body.is-dragging-task .column.is-drag-over {
 
 .user-info {
   font-family: var(--font-sans);
-  font-size: 1rem;
+  font-size: var(--text-board-ui);
   font-weight: 600;
   margin-top: 0;
 }
@@ -625,25 +629,23 @@ body.is-dragging-task .column.is-drag-over {
     border-radius: 14px;
   }
   .column h3 {
-    font-size: 1.65rem;
+    font-size: 1.2rem;
   }
   .items li {
-    font-size: 1.5rem;
+    font-size: var(--text-board-ui);
   }
-  /* Make the top Type input and Add button larger on big displays */
   .column input {
     padding: 0.75rem 1rem;
-    font-size: 1.1rem;
+    font-size: var(--text-board-ui);
     border-radius: 8px;
   }
   .column button:not(.item-actions):not(.item-menu-btn) {
     padding: 0.75rem 1.25rem;
-    font-size: 1.05rem;
+    font-size: var(--text-board-ui);
     border-radius: 8px;
   }
-  /* Signed as + Logout sizing */
   .user-info {
-    font-size: 1.4rem;
+    font-size: var(--text-board-ui);
     font-weight: 600;
   }
   .user-info + button {
@@ -676,24 +678,24 @@ body.is-dragging-task .column.is-drag-over {
     border-radius: 16px;
   }
   .column h3 {
-    font-size: 1.85rem;
+    font-size: 1.22rem;
   }
   .items li {
-    font-size: 1.75rem;
+    font-size: var(--text-board-ui);
     margin-bottom: 2rem;
   }
   .column input {
     padding: 1rem 1.25rem;
-    font-size: 1.25rem;
+    font-size: var(--text-board-ui);
     border-radius: 10px;
   }
   .column button:not(.item-actions):not(.item-menu-btn) {
     padding: 1rem 1.75rem;
-    font-size: 1.2rem;
+    font-size: var(--text-board-ui);
     border-radius: 10px;
   }
   .user-info {
-    font-size: 1.6rem;
+    font-size: var(--text-board-ui);
     font-weight: 600;
   }
   .user-info + button {
@@ -731,24 +733,24 @@ body.is-dragging-task .column.is-drag-over {
     border-radius: 18px;
   }
   .column h3 {
-    font-size: 2rem;
+    font-size: 1.25rem;
   }
   .items li {
-    font-size: 2rem;
+    font-size: var(--text-board-ui);
     margin-bottom: 2.5rem;
   }
   .column input {
     padding: 1.25rem 1.5rem;
-    font-size: 1.35rem;
+    font-size: var(--text-board-ui);
     border-radius: 12px;
   }
   .column button:not(.item-actions):not(.item-menu-btn) {
     padding: 1.25rem 2rem;
-    font-size: 1.3rem;
+    font-size: var(--text-board-ui);
     border-radius: 12px;
   }
   .user-info {
-    font-size: 2.9rem;
+    font-size: var(--text-board-ui);
     font-weight: 600;
   }
   .user-info + button {
@@ -1157,7 +1159,7 @@ body.is-dragging-task .column.is-drag-over {
   }
 
   .column h3 {
-    font-size: 1.1rem;
+    font-size: var(--text-column-title);
   }
 
   .board-type-switch,
@@ -1247,11 +1249,11 @@ body.is-dragging-task .column.is-drag-over {
   }
 
   .column h3 {
-    font-size: 1.25rem;
+    font-size: var(--text-column-title);
   }
 
   .items li {
-    font-size: 1.05rem;
+    font-size: var(--text-board-ui);
     margin-bottom: 1rem;
   }
 
@@ -1290,7 +1292,7 @@ body.is-dragging-task .column.is-drag-over {
   }
 
   .user-info {
-    font-size: 1rem;
+    font-size: var(--text-board-ui);
     text-align: center;
     word-break: break-word;
   }
