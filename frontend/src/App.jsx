@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+/** Avoid /api/api/v1 when build sets VITE_API_URL with a trailing /api */
+function apiBaseUrl() {
+  const raw = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  return raw.replace(/\/api\/?$/, "");
+}
+
+const API_URL = apiBaseUrl();
 
 async function api(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {

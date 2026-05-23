@@ -76,7 +76,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_URL=https://kanban.mnacar.com/api
+            VITE_API_URL=https://kanban.mnacar.com
           tags: |
             ghcr.io/macar3420/mykanban-frontend:latest
             ghcr.io/macar3420/mykanban-frontend:${{ github.sha }}

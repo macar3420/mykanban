@@ -20,8 +20,10 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Backend API
+    # Backend API (browser requests /api/v1/... on the backend)
     location /api {
+        # Fix double prefix if frontend was built with VITE_API_URL ending in /api
+        rewrite ^/api/api/(.*)$ /api/$1 break;
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
