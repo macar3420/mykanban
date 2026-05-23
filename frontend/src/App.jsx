@@ -817,21 +817,19 @@ function App() {
           <span className="drag-ghost-text">{dragging.title}</span>
         </div>
       )}
-      <div className="board-top-bar">
-        <header className="board-header">
-          <h1 className="board-title">Hey, {user.displayName}!</h1>
-          <p className="board-subtitle">Organize your tasks with style</p>
-        </header>
-        <div className="user-header">
-          <span className="user-info">Signed in as {user.displayName}</span>
-          <button
-            className="user-logout-btn"
-            type="button"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        </div>
+      <header className="board-header">
+        <h1 className="board-title">Hey, {user.displayName}!</h1>
+        <p className="board-subtitle">Organize your tasks with style</p>
+      </header>
+      <div className="user-header">
+        <span className="user-info">Signed in as {user.displayName}</span>
+        <button
+          className="user-logout-btn"
+          type="button"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
       </div>
       <div className="board-type-switch">
         <button
@@ -903,10 +901,7 @@ function App() {
           <div className="team-actions-row">
             <div className="team-buttons-column">
               {teams.length > 0 && (
-                <div
-                  className="team-buttons"
-                  style={{ paddingLeft: "3rem", marginLeft: "-5rem" }}
-                >
+                <div className="team-buttons team-buttons--offset">
                   {teams.map((team) => {
                     const isOwner =
                       team.created_by === user.id || team.role === "owner";

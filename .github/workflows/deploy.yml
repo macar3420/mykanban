@@ -50,7 +50,10 @@ jobs:
           git clean -fdx
 
       - name: Prepare work directory
-        run: mkdir -p "$WORK_DIR"
+        run: |
+          mkdir -p "$WORK_DIR"
+          # Legacy path from old WORK_DIR; safe to remove
+          rm -rf /home/macar/apps/mykanban /home/macar/apps 2>/dev/null || true
 
       - name: Sync repository
         run: |
@@ -61,18 +64,31 @@ jobs:
             --exclude '.github' \
             ./ "$WORK_DIR"/
 
-      - name: Pull images and start with Docker Compose
+      - name: Write production .env
         working-directory: ${{ env.WORK_DIR }}
         env:
           APP_ENV_FILE: ${{ secrets.APP_ENV_FILE }}
+        run: |
+          set -euo pipefail
+          if [ -n "${APP_ENV_FILE:-}" ]; then
+            printf '%s' "$APP_ENV_FILE" > .env
+          fi
+          test -f "${COMPOSE_FILE}"
+
+      - name: Pull and start production stack
+        working-directory: ${{ env.WORK_DIR }}
+        env:
           IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          set -x
 
-          # EC2 → ghcr.io can be slow; allow longer pulls and retry transient timeouts
           export DOCKER_CLIENT_TIMEOUT=300
           export COMPOSE_HTTP_TIMEOUT=300
+          export IMAGE_TAG
+
+          COMPOSE="docker-compose -f ${COMPOSE_FILE}"
 
           retry() {
             local max="$1"
@@ -83,21 +99,11 @@ jobs:
                 echo "Failed after ${max} attempts: $*"
                 return 1
               fi
-              echo "Attempt ${n} failed, retrying in 25s..."
-              sleep 25
+              echo "Attempt ${n} failed, retrying in 20s..."
+              sleep 20
               n=$((n + 1))
             done
           }
-
-          # write env file from GitHub secret (if exists)
-          if [ -n "${APP_ENV_FILE:-}" ]; then
-            printf '%s' "$APP_ENV_FILE" > .env
-          fi
-
-          export IMAGE_TAG
-
-          COMPOSE="docker-compose -f ${COMPOSE_FILE}"
-          test -f "${COMPOSE_FILE}"
 
           login_ghcr() {
             if [ -f "${HOME}/.docker/config.json" ] && grep -q '"ghcr.io"' "${HOME}/.docker/config.json"; then
@@ -107,13 +113,19 @@ jobs:
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           }
 
-          retry 5 login_ghcr
+          retry 3 login_ghcr
 
-          # Production stack only (mysql + backend:3001 + frontend:8083)
+          echo "==> Stopping old containers"
           $COMPOSE down --remove-orphans || true
-          retry 5 $COMPOSE pull
+
+          echo "==> Pulling images (tag: ${IMAGE_TAG})"
+          retry 3 timeout 600 $COMPOSE pull
+
+          echo "==> Starting containers"
           $COMPOSE up -d
 
+          echo "==> Container status"
+          $COMPOSE ps
           docker image prune -f || true
 
       - name: Health check

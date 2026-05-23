@@ -1,12 +1,16 @@
 :root {
   --font-sans: "Nunito Sans", system-ui, -apple-system, sans-serif;
+  --page-bg-color: #2a2626;
+  --page-bg-image:
+    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("/images/bg.jpg") center / cover no-repeat;
   font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #938e8e;
+  background-color: var(--page-bg-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -25,9 +29,8 @@ a:hover {
 
 html {
   height: 100%;
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-    url("/images/bg.jpg") center / cover no-repeat;
+  background: var(--page-bg-image);
+  background-color: var(--page-bg-color);
   background-attachment: fixed;
   overflow-x: hidden;
 }
@@ -37,6 +40,9 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   font-family: var(--font-sans);
+  background: var(--page-bg-image);
+  background-color: var(--page-bg-color);
+  background-attachment: fixed;
 }
 
 h1,
@@ -79,26 +85,13 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #060604;
-  }
-  button {
-    background-color: #651b1b;
-  }
-}
-
 /* Centered 3‑column board */
 .page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem 2rem 2rem 2rem;
+  padding: 0.75rem 2rem 2rem 2rem;
   gap: 1rem;
   width: 100%;
   box-sizing: border-box;
@@ -134,32 +127,20 @@ button:focus-visible {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-.board-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+.board-header {
+  text-align: center;
+  margin: 1.25rem auto 0.6rem;
   width: 100%;
-  max-width: 1200px;
-  margin-top: 2.5rem;
-  margin-bottom: 1rem;
+  max-width: 720px;
   padding: 0 1rem;
   box-sizing: border-box;
 }
 
-.board-header {
-  text-align: left;
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-}
-
 .board-title {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
-  line-height: 1.1;
-  margin: 0 0 0.5rem;
+  line-height: 1.15;
+  margin: 0 0 0.35rem;
   color: #fff;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -168,7 +149,7 @@ button:focus-visible {
 }
 
 .board-subtitle {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.92);
@@ -189,14 +170,7 @@ button:focus-visible {
   gap: 1.5rem;
   width: 100%;
   box-sizing: border-box;
-  padding-left: 3rem;
-  margin-left: -5rem;
-}
-
-/* Desktop-only offset for team sidebar alignment */
-.team-buttons--offset {
-  padding-left: 3rem;
-  margin-left: -5rem;
+  margin: 0 auto;
 }
 
 .team-actions-center {
@@ -575,17 +549,18 @@ body.is-dragging-task .column.is-drag-over {
 
 /* Base sizing for header info */
 .user-header {
-  margin: 0;
+  margin: 0 auto 1rem;
   display: flex;
   gap: 1rem;
   align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 1rem;
 }
 
 .user-info {
   font-family: var(--font-sans);
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   margin-top: 0;
 }
@@ -695,7 +670,6 @@ body.is-dragging-task .column.is-drag-over {
     grid-template-columns: repeat(3, minmax(400px, 1fr));
     gap: 2.5rem;
     width: 100%;
-    margin-left: -1.4rem;
   }
   .column {
     padding: 2rem;
@@ -1163,10 +1137,73 @@ body.is-dragging-task .column.is-drag-over {
   flex-shrink: 0;
 }
 
-/* ——— Mobile & tablet ——— */
+/* ——— Tablet & narrow desktop (incl. Cursor embedded browser) ——— */
+@media (max-width: 1200px) {
+  .board-wrapper {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+  }
+
+  .board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0 auto;
+  }
+
+  .column {
+    min-width: 0;
+    padding: 0.75rem;
+  }
+
+  .column h3 {
+    font-size: 1.1rem;
+  }
+
+  .board-type-switch,
+  .team-actions-center,
+  .user-header {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .team-buttons {
+    justify-content: center;
+  }
+}
+
+/* ——— Mobile ——— */
 @media (max-width: 900px) {
   html {
-    background-attachment: scroll;
+    background: var(--page-bg-color);
+    min-height: 100%;
+    height: auto;
+  }
+
+  body {
+    position: relative;
+    background: var(--page-bg-color);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Fixed layer keeps bg.jpg covering the screen while content scrolls */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: var(--page-bg-image);
+    background-color: var(--page-bg-color);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .page {
@@ -1176,21 +1213,37 @@ body.is-dragging-task .column.is-drag-over {
     gap: 0.75rem;
   }
 
+  .board-wrapper {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .board {
     grid-template-columns: 1fr;
     gap: 1rem;
     padding-left: 0;
     margin-left: 0;
-  }
-
-  .team-buttons--offset {
-    padding-left: 0;
-    margin-left: 0;
+    justify-items: center;
   }
 
   .column {
     min-height: auto;
     padding: 0.875rem;
+    width: 100%;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+  }
+
+  .team-actions-row {
+    justify-content: center;
+  }
+
+  .team-buttons--offset {
+    padding-left: 0;
+    margin-left: 0;
+    justify-content: center;
   }
 
   .column h3 {
@@ -1218,28 +1271,17 @@ body.is-dragging-task .column.is-drag-over {
     font-size: 16px; /* prevents iOS zoom on focus */
   }
 
-  .board-top-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    padding: 0 0.25rem;
-  }
-
   .board-header {
-    text-align: center;
+    margin-top: 1rem;
   }
 
   .user-header {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    align-items: center;
     width: 100%;
-  }
-
-  .board-title {
-    font-size: 1.5rem;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .user-info,
@@ -1262,6 +1304,8 @@ body.is-dragging-task .column.is-drag-over {
   .board-type-switch {
     width: 100%;
     max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .board-type-btn {
@@ -1273,6 +1317,8 @@ body.is-dragging-task .column.is-drag-over {
     width: 100%;
     max-width: 360px;
     flex-direction: column;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .team-action-btn {
@@ -1396,6 +1442,14 @@ body.is-dragging-task .column.is-drag-over {
     margin-top: 0;
   }
 
+  .board-header {
+    margin-top: 0.75rem;
+  }
+
+  .user-header {
+    gap: 0.5rem;
+  }
+
   .auth-form h3 {
     font-size: 1.25rem;
   }
@@ -1409,11 +1463,11 @@ body.is-dragging-task .column.is-drag-over {
   }
 
   .board-title {
-    font-size: 2.5rem;
+    font-size: 1.75rem;
   }
 
   .board-subtitle {
-    font-size: 1.15rem;
+    font-size: 0.95rem;
   }
 }
 
